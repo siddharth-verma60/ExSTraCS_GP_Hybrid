@@ -27,9 +27,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 """
 
 
-import math
 import numpy as np
-import copy
 import random
 import string
 import Functions
@@ -83,8 +81,8 @@ Parameters and functions used to describe the tree are described as follows:"""
             return retval
 
 
-    def __init__(self, function_set=("add", "mul", "sub", "div", "cos", "max", "sin", "neg", "min"),\
-                num_features=None, min_depth=2, max_depth=3):
+    def __init__(self, function_set=("add", "mul", "sub", "div", "cos", "sin"),\
+                num_features=None, min_depth=1, max_depth=6):
 
         """The constructor of GP_Tree accepts the function set, terminal set, number of features to keep in the tree
         (eg: if the value of num_features =1, features in tree would be X0, if num_features=3, features in tree would be
@@ -93,9 +91,8 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.function_set = function_set
         # A list of functions to be used. Custom functions can be created.'
 
-        self.terminal_set = [random.randint(-6, 6), random.randint(-6, 6), random.randint(-6, 6)]
-        # List of floating point or zero arity functions acting as the terminals
-        # of the tree
+        self.terminal_set = [terminal_v for terminal_v in range(-6, 6)]
+        # List of floating point or zero arity functions acting as the terminals of the tree
 
         if num_features is not None:
             self.num_features = num_features
@@ -126,10 +123,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.correctCover = 0  # The total number of times this classifier was in a correct set within a single epoch.
         # (value fixed after epochComplete)
 
-        # Covering sets initially overly optimistic prediction values - this takes care of error with prediction which
-        # previously had only zero value fitness and indFitness scores for covered rules.
-        self.indFitness = 1.0
-        self.fitness = 1.0
 
         self.condition = None
         self.errorSum = 0
@@ -138,8 +131,8 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.phenSum = 0  # sum of phenotype probability calculation values for continuous variables
         self.totalFreq = 1
         self.id = ''.join(random.choice(string.ascii_lowercase) for i in range(7))
-        self.one_count = 0
-        self.zero_count = 0
+        self.one_count = 0  # Used for keeping count of 1s in binary classification.
+        self.zero_count = 0 # Used for keeping count of 0s in binary classification.
         self.isTree = True
 
         # Major Parameters --------------------------------------------------
@@ -167,18 +160,12 @@ Parameters and functions used to describe the tree are described as follows:"""
         # Experience Management ---------------------------------------------
         self.epochComplete = False  # Has this rule existed for a complete epoch (i.e. a cycle through training set).
 
-        # Fitness Metrics ---------------------------------------------------
-        # self.freqComponent = None
 
-        # Fitness Sharing
-        # self.adjustedAccuracy = 0.0
-        # self.relativeAccuracy = 0.0
         self.lastMatch = 0
         self.lastFitness = 0.0
         self.sumIndFitness = 1.0  # experimental
         self.partOfCorrect = True
         self.lastMatchFitness = 1.0
-        # self.isMatchSetFitness = False #For Debugging
         self.aveRelativeIndFitness = None
         self.matchedAndFrontEstablished = False
         self.totalFreq = 1
@@ -224,6 +211,7 @@ Parameters and functions used to describe the tree are described as follows:"""
 
         temp_list.extend(self.terminal_set)
         self.terminal_set = temp_list
+        random.shuffle(self.terminal_set) # Shuffling the terminal list.
 
     @staticmethod
     def create_node(data):
@@ -327,7 +315,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         # Adding root to the queue
         node = self.root
         q.append(node)
-
         while q:
             popped_node = q.popleft()
             if popped_node.children is not None:
@@ -348,10 +335,9 @@ Parameters and functions used to describe the tree are described as follows:"""
     #                            Tree Evaluation Methods                                #
     #####################################################################################
 
-    # Function that sets the phenotype of the tree classifier. As it is taken from the exstracs code.
-    def setPhenotype(self,
-                     args):  # Ensure that for every instance we recalculate the tree phenotype prediction.  It never stays fixed.
-        args = [int(i) for i in args]
+    # Function that sets the phenotype of the tree classifier.
+    # Ensure that for every instance we recalculate the tree phenotype prediction. It never stays fixed.
+    def setPhenotype(self, args):
 
         # Tuple to numpy array conversion. This is done because the evaluate function accepts only numpy arrays.
         # Reshaping denotes that this is a single sample with number of features = the length of the input args.
@@ -359,9 +345,8 @@ Parameters and functions used to describe the tree are described as follows:"""
         dataInfo = cons.env.formatData
 
         # -------------------------------------------------------
-        # BINARY PHENOTYPE - ONLY
+        # BINARY PHENOTYPE
         # -------------------------------------------------------
-
         if dataInfo.discretePhenotype and len(dataInfo.phenotypeList) == 2:
             if self.evaluate(args) > 0:
                 self.phenotype = '1'
@@ -372,20 +357,20 @@ Parameters and functions used to describe the tree are described as follows:"""
                 if not self.epochComplete:
                     self.zero_count += 1
 
-            if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examie more carefully.
+            if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examine more carefully.
                 self.phenotype_RP = ((cons.env.formatData.classProportions['1'] * self.one_count) + (
                             cons.env.formatData.classProportions['0'] * self.zero_count)) / (
                                                 self.one_count + self.zero_count)
                 # For trees there could be one uniform random chance. Ultimately we want to use balanced accuracy for trees (do we do better than by chance) but for now we will just use 0.5 for simplicity.
 
         # -------------------------------------------------------
-        # MULTICLASS PHENOTYPE
+        # MULTI-CLASS PHENOTYPE
         # -------------------------------------------------------
         elif dataInfo.discretePhenotype and not len(dataInfo.phenotypeList) == 2:
 
-            if self.evaluate(args) < 0:  # lowest class
+            if self.evaluate(args) < 0:  # Lowest class
                 self.phenotype = dataInfo.phenotypeList[0]
-            elif self.evaluate(args) >= len(dataInfo.phenotypeList) - 1:  # lowest class
+            elif self.evaluate(args) >= len(dataInfo.phenotypeList) - 1:  # Highest class
                 self.phenotype = dataInfo.phenotypeList[len(dataInfo.phenotypeList) - 1]
             else:  # one of the middle classes
                 count = 1
@@ -396,15 +381,16 @@ Parameters and functions used to describe the tree are described as follows:"""
                         notfoundClass = False
                     if count > len(dataInfo.phenotypeList):
                         notfoundClass = False
-                        print("ERROR:setPhenotype in tree: Failed to find class")
+                        print("ERROR: setPhenotype in tree: Failed to find class")
                     count += 1
 
-            if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examie more carefully.
+            if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examine more carefully.
                 self.phenotype_RP = 0.5
+
         # -------------------------------------------------------
         # CONTINUOUS PHENOTYPE
         # -------------------------------------------------------
-        else:  # ContinuousCode #########################
+        else:
             self.phenotype = self.evaluate(args)
             if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examie more carefully.
                 self.phenotype_RP = 0.5
@@ -417,13 +403,12 @@ Parameters and functions used to describe the tree are described as follows:"""
         # Training vectors, where n_samples is the number of samples and num_features is the number of features.
 
         # Return: Y_Pred: shape = [n_samples]
-        # Evaluated value of the n_samples.
+        # Evaluated values of the n_samples training instances.
 
         Y_Pred = []
-        # print (X_Data)
         for features in X_Data:
             if features.size != self.num_features:
-                print(self.num_features, features.size)
+                print("Number of input features: ", self.num_features, "Number of counted features: ", features.size)
                 raise ValueError("Number of input features in X_Data is not equal to the parameter: 'num_features'.")
 
             Y_Pred.append(self._evaluate_helper(self.root, features))
@@ -451,11 +436,11 @@ Parameters and functions used to describe the tree are described as follows:"""
         func = Functions.get_function(node.data)  # Get the function from the alias name
         return float(func(*args))  # Return the computed value
 
-    #####################################################################################
+    ######################################################################################
     # Genetic operations: These functions are made just for the integration with exstracs#
-    #####################################################################################
+    ######################################################################################
     def uniformCrossover(self, classifier, state, phenotype):
-        """This function is made only for the sake of integration with exstracs. Real
+        """This function is made for the sake of integration with exstracs. Real
         crossover takes place takes place in the func: "uniformCrossover" which is
         declared outside this class."""
 
@@ -489,7 +474,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         elif self.fitness == 0.0 or self.fitness / self.numerosity == 0.0:
             self.deletionVote = self.aveMatchSetSize * self.numerosity * meanFitness / (cons.init_fit / self.numerosity)
         else:
-            # print self.fitness
             self.deletionVote = self.aveMatchSetSize * self.numerosity * meanFitness / (
                     self.fitness / self.numerosity)  # note, numerosity seems redundant (look into theory of deletion in LCS.
         return self.deletionVote
@@ -504,29 +488,29 @@ Parameters and functions used to describe the tree are described as follows:"""
         return False
 
     def isSubsumer(self):
-        """ Returns if the classifier (self) is a possible subsumer. A classifier must have sufficient experience (one epoch) and it must also be as or more accurate than the classifier it is trying to subsume.  """
+        """ Returns if the classifier (self) is a possible subsumer."""
         return False
 
     def isMoreGeneral(self, cl):
-        """ Returns if the classifier (self) is more general than cl. Check that all attributes specified in self are also specified in cl. """
+        """ Returns if the classifier (self) is more general than cl.
+         Check that all attributes specified in self are also specified in cl. """
         return False
 
     #####################################################################################
-    #            Some Miscellaneous methods needed in exstracs framework               #
+    #            Some Miscellaneous methods needed in ExSTraCS framework               #
     #####################################################################################
 
     def setPhenProb(self):
         pass
 
-    # Taken from the exstracs code
     def calcPhenProb(self, error):
         if self.epochComplete:
             return
+
         phenRange = [self.phenotype - error, self.phenotype + error]
         count = 0
         ref = 0
-        #         print cons.env.formatData.phenotypeRanked
-        #         print self.phenotype
+
         while ref < len(cons.env.formatData.phenotypeRanked) and cons.env.formatData.phenotypeRanked[ref] <= phenRange[
             1]:
             if cons.env.formatData.phenotypeRanked[ref] >= phenRange[0]:
@@ -571,15 +555,15 @@ Parameters and functions used to describe the tree are described as follows:"""
 
     def updateEpochStatus(self, exploreIter):
         """ Determines when a learning epoch has completed (one cycle through training data). """
-        # if not self.epochComplete and (exploreIter - self.initTimeStamp-1) >= cons.env.formatData.numTrainInstances and cons.offlineData:
+
         if not self.epochComplete and (
                 exploreIter - self.initTimeStamp) >= cons.env.formatData.numTrainInstances and cons.offlineData:
             self.epochComplete = True
             cons.firstEpochComplete = True
-            # randomProbClass = cons.env.formatData.classProportions[self.phenotype] #Put this in as a fix - for rules that become epoch complete after having been extrapolated on a previous run.
-            # self.usefulDiff = self.correctCover - randomProbClass*self.matchCover
+
             self.usefulDiff = (
-                    self.correctCover - self.phenotype_RP * self.matchCover)  # *len(self.specifiedAttList)
+                    self.correctCover - self.phenotype_RP * self.matchCover)  #
+
             # Pareto Fitness - Epoch Complete Front Construction
             if self.accuracyComponent > 0 and self.usefulDiff > 0:
                 objectivePair = [self.accuracyComponent, self.usefulDiff]
@@ -598,27 +582,13 @@ Parameters and functions used to describe the tree are described as follows:"""
         return False
 
     def updateExperience(self):
-        """ Increases the experience of the classifier by one. Once an epoch has completed, rule accuracy can't change."""
+        """ Increases the experience of the classifier by one. Once an epoch has completed, tree accuracy can't change."""
         self.matchCount += 1
 
         if self.epochComplete:  # Once epoch Completed, number of matches for a unique rule will not change, so do repeat calculation
             pass
         else:
             self.matchCover += 1
-
-        ######MOVE TO NEW PLACE EVENTUALLY
-        if not cons.env.formatData.discretePhenotype:
-            self.phenotype_RP = 0.5
-            # print "gets here"
-            """
-            self.phenotype_RP = float(self.phenSum) / float(self.phenCount)
-            if self.phenotype_RP > 1:
-                print("phenSum: " + str(self.phenSum))
-                print("matchCover: " + str(self.matchCover))
-                print("RP: " + str(self.phenotype_RP))
-                print("Count: " + str(self.phenCount))
-                raise NameError("Problem with phenotype_RP")
-            """
 
     def updateCorrect(self):
         """ Increases the correct phenotype tracking by one. Once an epoch has completed, rule accuracy can't change."""
@@ -645,12 +615,15 @@ Parameters and functions used to describe the tree are described as follows:"""
 
             self.errorCount += 1
 
+    # Error for not being in the correct set
     def updateIncorrectError(self):
         if not self.epochComplete:
             self.errorSum += 1.0
             self.errorCount += 1
 
     def updateAccuracy(self, exploreIter):
+
+
         """ Update the accuracy tracker """
         nonUsefulDiscount = 0.001
         coverOpportunity = 1000
@@ -674,6 +647,7 @@ Parameters and functions used to describe the tree are described as follows:"""
             adjAccuracy = self.phenotype_RP / 2.0
         else:
             adjAccuracy = self.accuracy * nonUsefulDiscount
+
         # -----------------------------------------------------------------------------------
         # CALCULATE ACCURACY COMPONENT
         # -----------------------------------------------------------------------------------
@@ -998,7 +972,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         elif self.matchCount < 1.0 / cons.beta:  # < 5
             self.aveMatchSetSize = (self.aveMatchSetSize * (self.matchCount - 1) + matchSetSize) / float(
                 self.matchCount)
-            # If matchCount = 2 -- 1 *
         else:
             self.aveMatchSetSize = self.aveMatchSetSize + cons.beta * (matchSetSize - self.aveMatchSetSize)
 
@@ -1057,10 +1030,7 @@ Parameters and functions used to describe the tree are described as follows:"""
         if self.epochComplete:
             epoch = 1
         classifierString += "None" + "\t"
-        #         if cons.env.formatData.discretePhenotype:
-        #             classifierString += str(self.phenotype)+"\t"
-        #         else: #ContinuousCode #########################
-        #             classifierString += str(self.phenotype[0])+';'+str(self.phenotype[1])+"\t"
+
         self.globalFitness = self.fitness * self.indFitness
         # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         classifierString += str(self.fitness) + "\t" + str(self.accuracy) + "\t" + str(self.numerosity) + "\t" + str(
@@ -1098,8 +1068,6 @@ Parameters and functions used to describe the tree are described as follows:"""
 
 #####################################################################################################
 ''' The Definition of the functions that are related to the population of the syntax trees.'''
-
-
 #####################################################################################################
 
 #####################################################################################
@@ -1261,7 +1229,7 @@ def uniformCrossover(first_parent, second_parent, state):
             print('One-point crossover failure')
             print("First Parent: " + str(origForm1))
             print("Second Parent " + str(origForm2))
-            print(5 / 0)
+            raise
 
         # Setting up specifiedAttList for both the parents.
         first_parent.specifiedAttList = first_parent.getSpecifiedAttList()
@@ -1280,7 +1248,7 @@ def uniformCrossover(first_parent, second_parent, state):
         else:
             raise NameError("At least one parent should be a GP_Tree instance.")
 
-        # PERFORM THE RULE/TREE Crossover!!!!!!
+        # Perform THE RULE/TREE Crossover!
         rule_crossover(first_parent, second_parent, state)
 
         # Checking that a rule does not go beyond specLimit

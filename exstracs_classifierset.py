@@ -415,182 +415,6 @@ class ClassifierSet:
         print("ClassifierSet: No eligible rules found for deletion in deleteFrom population.")
         return
 
-#
-#     def deleteFromPopulation(self, exploreIter):
-#         """ Deletes one classifier in the population.  The classifier that will be deleted is chosen by roulette wheel selection
-#         considering the deletion vote. Returns the macro-classifier which got decreased by one micro-classifier. """
-#         meanFitness = self.getPopFitnessSum()/float(self.microPopSize)
-#
-#         Epoch Pool Deletion:------------------------------------
-#         Three situations to deal with: too many EC - delete from EC: EC full - delete from ENC :  EC not full - treat all equal
-#
-#         maxEpochCompletePool = int(cons.N *0.5) #Half the rule pop is reserved for complete rules
-#         deleteFromEC = False
-#         deleteFromENC = False
-#         quickDelete = False
-#          print 'new'
-#          print self.ECPopSize
-#          print self.ENCPopSize
-#         if self.ECPopSize > maxEpochCompletePool:
-#             cons.epochPoolFull = True  #One time switch - once full it should stay full.
-#             deleteFromEC = True
-#             print 'deleteFromEC'
-#         else:
-#             if self.ECPopSize == maxEpochCompletePool:
-#                 deleteFromENC = True
-#                 print 'deleteFromENC'
-#         Calculate total wheel size------------------------------
-#         sumCl = 0.0
-#         voteList = []
-#         x = 0
-#
-#         for cl in self.popSet:
-#             vote = cl.getDelProp(meanFitness)
-#             vote = cl.getDeletionVote()
-#             if vote[1]:
-#                 quickDelete = True
-#                 break
-#             else:
-#                 sumCl += vote[0]
-#                 voteList.append(vote[0])
-#             x += 1
-#
-#
-#         choicePoint = sumCl * random.random() #Determine the choice point
-#         newSum=0.0
-#         for i in range(len(voteList)):
-#             cl = self.popSet[i]
-#             newSum = newSum + voteList[i]
-#             if newSum > choicePoint: #Select classifier for deletion
-#                 Delete classifier----------------------------------
-#                 cl.updateNumerosity(-1)
-#                 self.microPopSize -= 1
-#                 if cl.epochComplete:
-#                     self.ECPopSize -= 1
-#                 else:
-#                     self.ENCPopSize -= 1
-#
-#
-#                 if cl.numerosity < 1: # When all micro-classifiers for a given classifier have been depleted.
-#                     self.removeMacroClassifier(i)
-#                     self.deleteFromMatchSet(i)
-#                     self.deleteFromCorrectSet(i)
-#                 return
-#
-#          if quickDelete:
-#              cl = self.popSet[x]
-#              self.microPopSize -= cl.numerosity
-#              if cl.epochComplete:
-#                  self.ECPopSize -= cl.numerosity
-#              else:
-#                  self.ENCPopSize -= cl.numerosity
-#              self.removeMacroClassifier(x)
-#              self.deleteFromMatchSet(x)
-#              self.deleteFromCorrectSet(x)
-#          else:
-#              choicePoint = sumCl * random.random() #Determine the choice point
-#              newSum=0.0
-#              for i in range(len(voteList)):
-#                  cl = self.popSet[i]
-#                  newSum = newSum + voteList[i]
-#                  if newSum > choicePoint: #Select classifier for deletion
-#                      #Delete classifier----------------------------------
-#                      cl.updateNumerosity(-1)
-#                      self.microPopSize -= 1
-#                      if cl.epochComplete:
-#                          self.ECPopSize -= 1
-#                      else:
-#                          self.ENCPopSize -= 1
-#
-#
-#                      if cl.numerosity < 1: # When all micro-classifiers for a given classifier have been depleted.
-#                          self.removeMacroClassifier(i)
-#                          self.deleteFromMatchSet(i)
-#                          self.deleteFromCorrectSet(i)
-#                      return
-#
-#             print "ClassifierSet: No eligible rules found for deletion in deleteFrom population."
-
-
-#    def deleteFromPopulation(self, exploreIter):
-#        """ Deletes one classifier in the population.  The classifier that will be deleted is chosen by roulette wheel selection
-#        considering the deletion vote. Returns the macro-classifier which got decreased by one micro-classifier. """
-#        meanFitness = self.getPopFitnessSum()/float(self.microPopSize)
-#
-#        #Epoch Pool Deletion:------------------------------------
-#        #Three situations to deal with: too many EC - delete from EC: EC full - delete from ENC :  EC not full - treat all equal
-#
-#        maxEpochCompletePool = int(cons.N *0.5) #Half the rule pop is reserved for complete rules
-#        deleteFromEC = False
-#        deleteFromENC = False
-#        quickDelete = False
-##         print 'new'
-##         print self.ECPopSize
-##         print self.ENCPopSize
-#        if self.ECPopSize > maxEpochCompletePool:
-#            cons.epochPoolFull = True  #One time switch - once full it should stay full.
-#            deleteFromEC = True
-#            #print 'deleteFromEC'
-#        else:
-#            if self.ECPopSize == maxEpochCompletePool:
-#                deleteFromENC = True
-#                #print 'deleteFromENC'
-#
-#        #Calculate total wheel size------------------------------
-
-#        sumCl = 0.0
-#        voteList = []
-#        if deleteFromEC:
-#            for cl in self.popSet:
-#                if cl.epochComplete:
-#                    vote = cl.getDelProp(meanFitness)
-#                    #vote = cl.getDeletionVote()
-#                    sumCl += vote
-#                    voteList.append(vote)
-#                else:
-#                    voteList.append(0)
-#        elif deleteFromENC:
-#            for cl in self.popSet:
-#                if cl.epochComplete:
-#                    voteList.append(0)
-#                else:
-#                    vote = cl.getDelProp(meanFitness)
-#                    #vote = cl.getDeletionVote()
-#                    sumCl += vote
-#                    voteList.append(vote)
-#        else: #All rules treated equally
-#            for cl in self.popSet:
-#                vote = cl.getDelProp(meanFitness)
-#                #vote = cl.getDeletionVote()
-#                sumCl += vote
-#                voteList.append(vote)
-#
-#        #--------------------------------------------------------
-#        choicePoint = sumCl * random.random() #Determine the choice point
-#
-#        newSum=0.0
-#        for i in range(len(voteList)):
-#            cl = self.popSet[i]
-#            newSum = newSum + voteList[i]
-#            if newSum > choicePoint: #Select classifier for deletion
-#                #Delete classifier----------------------------------
-#                cl.updateNumerosity(-1)
-#                self.microPopSize -= 1
-#                if cl.epochComplete:
-#                    self.ECPopSize -= 1
-#                else:
-#                    self.ENCPopSize -= 1
-#
-#
-#                if cl.numerosity < 1: # When all micro-classifiers for a given classifier have been depleted.
-#                    self.removeMacroClassifier(i)
-#                    self.deleteFromMatchSet(i)
-#                    self.deleteFromCorrectSet(i)
-#                return
-#
-#        print "ClassifierSet: No eligible rules found for deletion in deleteFrom population."
-
-
     def removeMacroClassifier(self, ref):
         """ Removes the specified (macro-) classifier from the population. """
         self.popSet.pop(ref)
@@ -637,21 +461,7 @@ class ClassifierSet:
         selectList = self.selectClassifierRW()
         clP1 = selectList[0]
         clP2 = selectList[1]
-        #test selection for tree and rule crossover
 
-        """
-        if cons.selectionMethod == "roulette":
-            selectList = self.selectClassifierRW()
-            clP1 = selectList[0]
-            clP2 = selectList[1]
-        elif cons.selectionMethod == "tournament":
-            #selectList = self.selectClassifierT()
-            selectList = self.selectClassifierT(exploreIter)
-            clP1 = selectList[0]
-            clP2 = selectList[1]
-        else:
-            print "ClassifierSet: Error - requested GA selection method not available."
-        """
         cons.timer.stopTimeSelection()
         
         #START GP INTEGRATION CODE*************************************************************************************************************************************
@@ -664,7 +474,6 @@ class ClassifierSet:
         else:
             cl1 = Classifier(clP1, exploreIter)
         if clP2 == None:  #If there was only one parent - then both 'parents' will be from the same source.  No reason to do crossover if this is the case, only mutation.
-            #print("Only one parent available")
             if clP1.isTree:
                 # cl2 = Tree(clP1, exploreIter)   ## For older Deap code
                 cl2 = tree_Clone(clP1, exploreIter)
@@ -689,31 +498,31 @@ class ClassifierSet:
         # CROSSOVER OPERATOR - Uniform Crossover Implemented (i.e. all attributes have equal probability of crossing over between two parents)
         #-------------------------------------------------------
         if cl1.equals(cl2):
-            #print("it happened")
+            # If parents are the same don't do crossover.
             pass
-        if not cl1.equals(cl2) and random.random() < cons.chi:  #If parents are the same don't do crossover.
+        if not cl1.equals(cl2) and random.random() < cons.chi:
             cons.timer.startTimeCrossover()
-            #print('------------------------------Performing Crossover')
-            
+
             #REPORTING CROSSOVER EVENTS!------------TEMP
-            if cl1.isTree and cl2.isTree:
-                #print('Crossing 2 Trees')
-                #print(str(cl1.form)+str(cl1.specifiedAttList))
-                #print(str(cl2.form)+str(cl2.specifiedAttList))
-                pass
-            elif not cl1.isTree and not cl2.isTree:
-                #print('Crossing 2 Rules')
-                pass
-            else: #one of each
-                #print('Crossing a Tree with a Rule')
-                if cl1.isTree:
-                    #print(str(cl1.form)+str(cl1.specifiedAttList))
-                    #print(str(cl2.condition)+str(cl2.specifiedAttList))
-                    pass
-                else:
-                    #print(str(cl2.form)+str(cl2.specifiedAttList))
-                    #print(str(cl1.condition)+str(cl1.specifiedAttList))
-                    pass
+            # print('------------------------------Performing Crossover')
+            # if cl1.isTree and cl2.isTree:
+            #     print('Crossing 2 Trees')
+            #     print(str(cl1)+str(cl1.specifiedAttList))
+            #     print(str(cl2)+str(cl2.specifiedAttList))
+            #     pass
+            # elif not cl1.isTree and not cl2.isTree:
+            #     print('Crossing 2 Rules')
+            #     pass
+            # else: #one of each
+            #     print('Crossing a Tree with a Rule')
+            #     if cl1.isTree:
+            #         print(str(cl1)+str(cl1.specifiedAttList))
+            #         print(str(cl2.condition)+str(cl2.specifiedAttList))
+            #         pass
+            #     else:
+            #         print(str(cl2)+str(cl2.specifiedAttList))
+            #         print(str(cl1.condition)+str(cl1.specifiedAttList))
+            #         pass
             #--------------------------------------------------
             
             changed = cl1.uniformCrossover(cl2,state, phenotype) #PERFORM CROSSOVER!  #calls either the rule or tree crossover method depending on whether cl1 is tree or rule.
@@ -750,19 +559,7 @@ class ClassifierSet:
             #Update correct count accordingly.
             cl2.updateClonePhenotype(phenotype)
         #STOP GP INTEGRATION CODE*************************************************************************************************************************************
-        """
-        for cl in self.popSet:
-            if cl.isTree:
-                cl.Mutation(state, phenotype)
-        """
-        #print('Crossover output')
-        if cl1.isTree:
-            #print(str(cl1.form)+str(cl1.specifiedAttList))
-            pass
-        if cl2.isTree:
-            #print(str(cl2.form)+str(cl2.specifiedAttList))
-            pass
-        
+
         #Generalize any continuous attributes that span then entire range observed in the dataset.
         if cons.env.formatData.continuousCount > 0:
             cl1.rangeCheck()
@@ -770,18 +567,13 @@ class ClassifierSet:
         #-------------------------------------------------------
         # CONTINUOUS ENDPOINT - phenotype range probability correction
         #-------------------------------------------------------
-        if not cons.env.formatData.discretePhenotype: #ContinuousCode #########################
+        if not cons.env.formatData.discretePhenotype: #Continuous Code
             cl1.setPhenProb()
             cl2.setPhenProb()
 
         #-------------------------------------------------------
         # ADD OFFSPRING TO POPULATION
         #-------------------------------------------------------
-        #print changed
-        #print nowchanged
-        #print howaboutnow
-        #print "##############################################"
-
         if changed or nowchanged or howaboutnow:
             self.insertDiscoveredClassifiers(cl1, cl2, clP1, clP2, exploreIter) #Includes subsumption if activated.
 

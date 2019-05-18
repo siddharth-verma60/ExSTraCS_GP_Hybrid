@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from exstracs_classifier import *
-from exstracs_tree import *
 import math
 
 

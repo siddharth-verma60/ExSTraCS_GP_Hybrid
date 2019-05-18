@@ -314,7 +314,6 @@ class Classifier:
     def uniformCrossover(self, cl, state, phenotype):
         if cl.isTree:
             cl.uniformCrossover(self, state, phenotype)
-            #change this when get crossover to return bool
             return True
         else:
             return self.ruleCrossover(cl, state, phenotype)
