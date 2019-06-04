@@ -112,6 +112,7 @@ class Prediction:
             else: #One best class determined by fitness vote
                 self.decision = bestClass[0]
 
+
         #-------------------------------------------------------
         # CONTINUOUS PHENOTYPE
         #-------------------------------------------------------
@@ -121,11 +122,14 @@ class Prediction:
         #Determine which (shortest) span has the largest vote.
         #Quick version is to take the centroid of this 'best' span
         #OR - identify any M rules that cover whole 'best' span, and use centroid voting that includes only these rules.
+
         else: #ContinuousCode #########################
             if len(population.matchSet) < 1:
                 self.decision = None
             else:
                 segmentList = []
+                treeCount=0
+                value=0
                 for ref in population.matchSet:
                     cl = population.popSet[ref]
                     if not cl.isTree:
@@ -138,13 +142,22 @@ class Prediction:
                     else:
                         if cl.phenotype == None:
                             raise NameError("phenotype is none")
-                        value = cl.phenotype
-                        if not value in segmentList:
-                            segmentList.append(value)
+
+                        value+= cl.phenotype
+                        treeCount+=1
+
+                        # print("value: ", value, " tree count: ", treeCount)
+
+                # When rules are switched OFF, we return the average of phenotypes from the tree ensemble.
+                if(cons.popInitGP == 1.0):
+                    self.decision = value/treeCount
+                    return
+
                 segmentList.sort()
                 voteList = []
                 for i in range(0,len(segmentList)-1):
                     voteList.append(0)
+
                 #PART 2
                 for ref in population.matchSet:
                     cl = population.popSet[ref]
@@ -155,11 +168,12 @@ class Prediction:
                         for j in range(len(segmentList)-1):
                             if low <= segmentList[j] and high >= segmentList[j+1]:
                                 voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
-                    else:
-                        for j in range(len(segmentList)-1):
-                            if segmentList[j] <= value and value <= segmentList[j+1]:
-                                voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
-                #PART 3
+                    # else:
+                    #     for j in range(len(segmentList)-1):
+                    #         if segmentList[j] <= value and value <= segmentList[j+1]:
+                    #             voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
+
+                # PART 3
                 bestVote = max(voteList)
                 bestRef = voteList.index(bestVote)
                 bestlow = segmentList[bestRef]
@@ -167,17 +181,6 @@ class Prediction:
                 centroid = (bestlow + besthigh) / 2.0
 
                 self.decision = centroid
-
-
-#     def getFitnessSum(self,population,low,high):
-#         """ Get the fitness Sum of rules in the rule-set. For continuous phenotype prediction. """
-#         fitSum = 0
-#         for ref in population.matchSet:
-#             cl = population.popSet[ref]
-#             if cl.phenotype[0] <= low and cl.phenotype[1] >= high: #if classifier range subsumes segment range.
-#                 fitSum += cl.fitness
-#         return fitSum
-
 
     def getDecision(self):
         """ Returns prediction decision. """

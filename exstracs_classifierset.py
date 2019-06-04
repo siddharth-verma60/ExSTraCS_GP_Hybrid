@@ -150,18 +150,13 @@ class ClassifierSet:
 
         #ContinuousCode #########################
         #Calculate error threshold
-
         if not cons.env.formatData.discretePhenotype:
             totalError = 0
             tree_count = 0
             for cl in self.popSet:
                 if cl.isTree:
                     error = abs(float(phenotype) - float(cl.phenotype))
-                    dataInfo = cons.env.formatData
-                    if error > (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0]):
-                        error = (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0])
                     totalError += error
-                    #print abs(float(phenotype) - float(cl.phenotype))
                     tree_count += 1
             newError = totalError / tree_count
             if self.tree_error != None:
@@ -170,7 +165,7 @@ class ClassifierSet:
             else:
                 self.tree_error = newError
 
-            #print("New Error: " + str(newError) + " Tree Error: " + str(self.tree_error) + "Total Error: " + str(totalError))
+            # print("New Error: " + str(newError) + " Tree Error: " + str(self.tree_error) + "Total Error: " + str(totalError))
 
             for cl in self.popSet:
                 if cl.isTree:
@@ -179,6 +174,7 @@ class ClassifierSet:
 
         doCovering = True # Covering check: Twofold (1)checks that a match is present, and (2) that at least one match dictates the correct phenotype.
         setNumerositySum = 0
+
         #-------------------------------------------------------
         # MATCHING
         #-------------------------------------------------------
@@ -220,104 +216,6 @@ class ClassifierSet:
             self.matchSet.append(len(self.popSet)-1)  # Add covered classifier to matchset
             doCovering = False
             cons.timer.stopTimeCovering()
-        """
-
-        if exploreIter % 100 == 0 and exploreIter > 0:
-            numRules = 0
-            numTrees = 0
-
-            for i in range(len(self.popSet)):
-                cl = self.popSet[i]
-                if cl.isTree:
-                    numTrees += 1
-                else:
-                    numRules += 1
-
-            #print params of iteration
-            print "Iter: " + str(exploreIter) + " PopSize: " + str(len(self.popSet)) + " MatchSize: " + str(len(self.matchSet))
-            print "MicroPopSize: " + str(self.microPopSize) + " NumTrees: " + str(numTrees) + " NumRules: " + str(numRules)
-            print "Tree: " + str(self.tree_cross_count) + " Rule: " + str(self.rule_cross_count) + " Both: " + str(self.both_cross_count) + " Total: " + str(self.tree_cross_count + self.rule_cross_count + self.both_cross_count)
-
-
-            best = 0
-            best_tree = None
-            for cl in self.popSet:
-                if cl.isTree:
-                    if cl.accuracy > best:
-                        best = cl.accuracy
-                        best_tree = cl
-            print "Best tree accuracy: " + str(best)
-            if best_tree:
-                print "Best Tree: " + str(best_tree.form)
-                #print "Fitness: " + str(best_tree.fitness)
-                print "ID: " + str(best_tree.id)
-
-        """
-        """
-
-        found = False
-        for cl in self.popSet:
-            if cl.marked:
-                print "Accuracy: " + str(cl.accuracy) + " Fitness: " + str(cl.fitness) + " MatchCount: " + str(cl.matchCount) + " CorrectCount: " + str(cl.correctCount)
-
-                #print cl.form
-                found = True
-                break
-        if not found:
-            print "Deleted"
-
-        """
-
-        #track young tree
-
-        """
-
-        for cl in self.popSet:
-            if cl.isTree:
-                if cl.initTimeStamp > 0:
-                    print "Young Tree: " + str(cl.form)
-                    print "Fitness: " + str(cl.fitness)
-                    print "ID: " + str(cl.id)
-        """
-
-        #Last used reporting!!!!!!!!!!!!!!!!!!!!
-        """
-        numRules = 0
-        numTrees = 0
-
-        for i in range(len(self.popSet)):
-            cl = self.popSet[i]
-            if cl.isTree:
-                numTrees += 1
-            else:
-                numRules += 1
-
-        #print params of iteration
-        print("Iter: " + str(exploreIter) + " PopSize: " + str(len(self.popSet)) + " MatchSize: " + str(len(self.matchSet)))
-        print("MicroPopSize: " + str(self.microPopSize) + " NumTrees: " + str(numTrees) + " NumRules: " + str(numRules))
-        print("Tree: " + str(self.tree_cross_count) + " Rule: " + str(self.rule_cross_count) + " Both: " + str(self.both_cross_count) + " Total: " + str(self.tree_cross_count + self.rule_cross_count + self.both_cross_count))
-
-
-        best = 0
-        best_tree = None
-        for cl in self.popSet:
-            if cl.isTree:
-                if cl.fitness > best:
-                    best = cl.fitness
-                    best_tree = cl
-        print("Best tree fitness: " + str(best))
-        if best_tree:
-            print("Best Tree: " + str(best_tree.form))
-            print("AccuracyComp: " + str(best_tree.accuracyComponent))
-            print("CoverDiff: " + str(best_tree.coverDiff))
-            print("Ind Fitness: " + str(best_tree.indFitness))
-            print("Epoch Complete: " + str(best_tree.epochComplete) + " MatchCount: " + str(best_tree.matchCount))
-            #print "ID: " + str(best_tree.id)
-        """
-
-
-
-
 
 
     def makeCorrectSet(self, phenotype):
