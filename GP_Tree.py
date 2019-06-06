@@ -449,15 +449,18 @@ Parameters and functions used to describe the tree are described as follows:"""
     def Mutation(self, state, phenotype):
         origform = copy.deepcopy(self)
 
-        '''Need to confirm from Ryan, which method to call?
-        # Option 1: Call this method
-        mutation_NodeReplacement(self)
+        flip = random.randint(0, 1)
 
-        # Option 2: Call this method
-        randomTree=GP_Tree(min_depth=3, max_depth=4)
-        randomTree.generate_half_and_half()
-        mutation_Uniform(self, randomTree)
-        '''
+        # Choose any method with 50:50 probability.
+        if flip is 0:
+            # Option 1: Call this method
+            mutation_NodeReplacement(self)
+        else:
+            # Option 2: Call this method
+            randomTree=GP_Tree(min_depth=3, max_depth=4)
+            randomTree.generate_half_and_half()
+            mutation_Uniform(self, randomTree)
+
 
         return str(self) == str(origform)
 

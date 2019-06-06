@@ -4,21 +4,17 @@ Authors:     Ryan Urbanowicz - Written at Dartmouth College, Hanover, NH, USA
 Contact:     ryan.j.urbanowicz@darmouth.edu
 Created:     April 25, 2014
 Description: This module handles all classifier sets (population, match set, correct set) along with mechanisms and heuristics that act on these sets.
-
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 ExSTraCS V1.0: Extended Supervised Tracking and Classifying System - An advanced LCS designed specifically for complex, noisy classification/data mining tasks,
 such as biomedical/bioinformatics/epidemiological problem domains.  This algorithm should be well suited to any supervised learning problem involving
 classification, prediction, data mining, and knowledge discovery.  This algorithm would NOT be suited to function approximation, behavioral modeling,
 or other multi-step problems.  This LCS algorithm is most closely based on the "UCS" algorithm, an LCS introduced by Ester Bernado-Mansilla and
 Josep Garrell-Guiu (2003) which in turn is based heavily on "XCS", an LCS introduced by Stewart Wilson (1995).
-
 Copyright (C) 2014 Ryan Urbanowicz
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the
 Free Software Foundation; either version 3 of the License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABLILITY
 or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -150,13 +146,18 @@ class ClassifierSet:
 
         #ContinuousCode #########################
         #Calculate error threshold
+
         if not cons.env.formatData.discretePhenotype:
             totalError = 0
             tree_count = 0
             for cl in self.popSet:
                 if cl.isTree:
                     error = abs(float(phenotype) - float(cl.phenotype))
+                    dataInfo = cons.env.formatData
+                    if error > (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0]):
+                        error = (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0])
                     totalError += error
+                    #print abs(float(phenotype) - float(cl.phenotype))
                     tree_count += 1
             newError = totalError / tree_count
             if self.tree_error != None:
@@ -165,7 +166,7 @@ class ClassifierSet:
             else:
                 self.tree_error = newError
 
-            # print("New Error: " + str(newError) + " Tree Error: " + str(self.tree_error) + "Total Error: " + str(totalError))
+            #print("New Error: " + str(newError) + " Tree Error: " + str(self.tree_error) + "Total Error: " + str(totalError))
 
             for cl in self.popSet:
                 if cl.isTree:
@@ -174,7 +175,6 @@ class ClassifierSet:
 
         doCovering = True # Covering check: Twofold (1)checks that a match is present, and (2) that at least one match dictates the correct phenotype.
         setNumerositySum = 0
-
         #-------------------------------------------------------
         # MATCHING
         #-------------------------------------------------------
@@ -216,6 +216,90 @@ class ClassifierSet:
             self.matchSet.append(len(self.popSet)-1)  # Add covered classifier to matchset
             doCovering = False
             cons.timer.stopTimeCovering()
+        """
+        if exploreIter % 100 == 0 and exploreIter > 0:
+            numRules = 0
+            numTrees = 0
+            for i in range(len(self.popSet)):
+                cl = self.popSet[i]
+                if cl.isTree:
+                    numTrees += 1
+                else:
+                    numRules += 1
+            #print params of iteration
+            print "Iter: " + str(exploreIter) + " PopSize: " + str(len(self.popSet)) + " MatchSize: " + str(len(self.matchSet))
+            print "MicroPopSize: " + str(self.microPopSize) + " NumTrees: " + str(numTrees) + " NumRules: " + str(numRules)
+            print "Tree: " + str(self.tree_cross_count) + " Rule: " + str(self.rule_cross_count) + " Both: " + str(self.both_cross_count) + " Total: " + str(self.tree_cross_count + self.rule_cross_count + self.both_cross_count)
+            best = 0
+            best_tree = None
+            for cl in self.popSet:
+                if cl.isTree:
+                    if cl.accuracy > best:
+                        best = cl.accuracy
+                        best_tree = cl
+            print "Best tree accuracy: " + str(best)
+            if best_tree:
+                print "Best Tree: " + str(best_tree.form)
+                #print "Fitness: " + str(best_tree.fitness)
+                print "ID: " + str(best_tree.id)
+        """
+        """
+        found = False
+        for cl in self.popSet:
+            if cl.marked:
+                print "Accuracy: " + str(cl.accuracy) + " Fitness: " + str(cl.fitness) + " MatchCount: " + str(cl.matchCount) + " CorrectCount: " + str(cl.correctCount)
+                #print cl.form
+                found = True
+                break
+        if not found:
+            print "Deleted"
+        """
+
+        #track young tree
+
+        """
+        for cl in self.popSet:
+            if cl.isTree:
+                if cl.initTimeStamp > 0:
+                    print "Young Tree: " + str(cl.form)
+                    print "Fitness: " + str(cl.fitness)
+                    print "ID: " + str(cl.id)
+        """
+
+        #Last used reporting!!!!!!!!!!!!!!!!!!!!
+        """
+        numRules = 0
+        numTrees = 0
+        for i in range(len(self.popSet)):
+            cl = self.popSet[i]
+            if cl.isTree:
+                numTrees += 1
+            else:
+                numRules += 1
+        #print params of iteration
+        print("Iter: " + str(exploreIter) + " PopSize: " + str(len(self.popSet)) + " MatchSize: " + str(len(self.matchSet)))
+        print("MicroPopSize: " + str(self.microPopSize) + " NumTrees: " + str(numTrees) + " NumRules: " + str(numRules))
+        print("Tree: " + str(self.tree_cross_count) + " Rule: " + str(self.rule_cross_count) + " Both: " + str(self.both_cross_count) + " Total: " + str(self.tree_cross_count + self.rule_cross_count + self.both_cross_count))
+        best = 0
+        best_tree = None
+        for cl in self.popSet:
+            if cl.isTree:
+                if cl.fitness > best:
+                    best = cl.fitness
+                    best_tree = cl
+        print("Best tree fitness: " + str(best))
+        if best_tree:
+            print("Best Tree: " + str(best_tree.form))
+            print("AccuracyComp: " + str(best_tree.accuracyComponent))
+            print("CoverDiff: " + str(best_tree.coverDiff))
+            print("Ind Fitness: " + str(best_tree.indFitness))
+            print("Epoch Complete: " + str(best_tree.epochComplete) + " MatchCount: " + str(best_tree.matchCount))
+            #print "ID: " + str(best_tree.id)
+        """
+
+
+
+
 
 
     def makeCorrectSet(self, phenotype):
@@ -245,14 +329,12 @@ class ClassifierSet:
         if exploreIter % 100 == 0 and exploreIter > 0:
             numRules = 0
             numTrees = 0
-
             for i in self.correctSet:
                 cl = self.popSet[i]
                 if cl.isTree:
                     numTrees += 1
                 else:
                     numRules += 1
-
             print "CorrectSet - NumTrees: " + str(numTrees) + " NumRules: " + str(numRules)
         """
 
@@ -261,10 +343,10 @@ class ClassifierSet:
         """ Constructs a match set for evaluation purposes which does not activate either covering or deletion. """
         for i in range(len(self.popSet)):       # Go through the population
             cl = self.popSet[i]                 # A single classifier
-            
+
             if cl.isTree: #In evaluation we still need to update the phenotype for each instance for trees
                 cl.setPhenotype(state)
-                
+
             if cl.match(state):                 # Check for match
                 self.matchSet.append(i)         # Add classifier to match set
 
@@ -313,6 +395,182 @@ class ClassifierSet:
         print("ClassifierSet: No eligible rules found for deletion in deleteFrom population.")
         return
 
+#
+#     def deleteFromPopulation(self, exploreIter):
+#         """ Deletes one classifier in the population.  The classifier that will be deleted is chosen by roulette wheel selection
+#         considering the deletion vote. Returns the macro-classifier which got decreased by one micro-classifier. """
+#         meanFitness = self.getPopFitnessSum()/float(self.microPopSize)
+#
+#         Epoch Pool Deletion:------------------------------------
+#         Three situations to deal with: too many EC - delete from EC: EC full - delete from ENC :  EC not full - treat all equal
+#
+#         maxEpochCompletePool = int(cons.N *0.5) #Half the rule pop is reserved for complete rules
+#         deleteFromEC = False
+#         deleteFromENC = False
+#         quickDelete = False
+#          print 'new'
+#          print self.ECPopSize
+#          print self.ENCPopSize
+#         if self.ECPopSize > maxEpochCompletePool:
+#             cons.epochPoolFull = True  #One time switch - once full it should stay full.
+#             deleteFromEC = True
+#             print 'deleteFromEC'
+#         else:
+#             if self.ECPopSize == maxEpochCompletePool:
+#                 deleteFromENC = True
+#                 print 'deleteFromENC'
+#         Calculate total wheel size------------------------------
+#         sumCl = 0.0
+#         voteList = []
+#         x = 0
+#
+#         for cl in self.popSet:
+#             vote = cl.getDelProp(meanFitness)
+#             vote = cl.getDeletionVote()
+#             if vote[1]:
+#                 quickDelete = True
+#                 break
+#             else:
+#                 sumCl += vote[0]
+#                 voteList.append(vote[0])
+#             x += 1
+#
+#
+#         choicePoint = sumCl * random.random() #Determine the choice point
+#         newSum=0.0
+#         for i in range(len(voteList)):
+#             cl = self.popSet[i]
+#             newSum = newSum + voteList[i]
+#             if newSum > choicePoint: #Select classifier for deletion
+#                 Delete classifier----------------------------------
+#                 cl.updateNumerosity(-1)
+#                 self.microPopSize -= 1
+#                 if cl.epochComplete:
+#                     self.ECPopSize -= 1
+#                 else:
+#                     self.ENCPopSize -= 1
+#
+#
+#                 if cl.numerosity < 1: # When all micro-classifiers for a given classifier have been depleted.
+#                     self.removeMacroClassifier(i)
+#                     self.deleteFromMatchSet(i)
+#                     self.deleteFromCorrectSet(i)
+#                 return
+#
+#          if quickDelete:
+#              cl = self.popSet[x]
+#              self.microPopSize -= cl.numerosity
+#              if cl.epochComplete:
+#                  self.ECPopSize -= cl.numerosity
+#              else:
+#                  self.ENCPopSize -= cl.numerosity
+#              self.removeMacroClassifier(x)
+#              self.deleteFromMatchSet(x)
+#              self.deleteFromCorrectSet(x)
+#          else:
+#              choicePoint = sumCl * random.random() #Determine the choice point
+#              newSum=0.0
+#              for i in range(len(voteList)):
+#                  cl = self.popSet[i]
+#                  newSum = newSum + voteList[i]
+#                  if newSum > choicePoint: #Select classifier for deletion
+#                      #Delete classifier----------------------------------
+#                      cl.updateNumerosity(-1)
+#                      self.microPopSize -= 1
+#                      if cl.epochComplete:
+#                          self.ECPopSize -= 1
+#                      else:
+#                          self.ENCPopSize -= 1
+#
+#
+#                      if cl.numerosity < 1: # When all micro-classifiers for a given classifier have been depleted.
+#                          self.removeMacroClassifier(i)
+#                          self.deleteFromMatchSet(i)
+#                          self.deleteFromCorrectSet(i)
+#                      return
+#
+#             print "ClassifierSet: No eligible rules found for deletion in deleteFrom population."
+
+
+#    def deleteFromPopulation(self, exploreIter):
+#        """ Deletes one classifier in the population.  The classifier that will be deleted is chosen by roulette wheel selection
+#        considering the deletion vote. Returns the macro-classifier which got decreased by one micro-classifier. """
+#        meanFitness = self.getPopFitnessSum()/float(self.microPopSize)
+#
+#        #Epoch Pool Deletion:------------------------------------
+#        #Three situations to deal with: too many EC - delete from EC: EC full - delete from ENC :  EC not full - treat all equal
+#
+#        maxEpochCompletePool = int(cons.N *0.5) #Half the rule pop is reserved for complete rules
+#        deleteFromEC = False
+#        deleteFromENC = False
+#        quickDelete = False
+##         print 'new'
+##         print self.ECPopSize
+##         print self.ENCPopSize
+#        if self.ECPopSize > maxEpochCompletePool:
+#            cons.epochPoolFull = True  #One time switch - once full it should stay full.
+#            deleteFromEC = True
+#            #print 'deleteFromEC'
+#        else:
+#            if self.ECPopSize == maxEpochCompletePool:
+#                deleteFromENC = True
+#                #print 'deleteFromENC'
+#
+#        #Calculate total wheel size------------------------------
+
+#        sumCl = 0.0
+#        voteList = []
+#        if deleteFromEC:
+#            for cl in self.popSet:
+#                if cl.epochComplete:
+#                    vote = cl.getDelProp(meanFitness)
+#                    #vote = cl.getDeletionVote()
+#                    sumCl += vote
+#                    voteList.append(vote)
+#                else:
+#                    voteList.append(0)
+#        elif deleteFromENC:
+#            for cl in self.popSet:
+#                if cl.epochComplete:
+#                    voteList.append(0)
+#                else:
+#                    vote = cl.getDelProp(meanFitness)
+#                    #vote = cl.getDeletionVote()
+#                    sumCl += vote
+#                    voteList.append(vote)
+#        else: #All rules treated equally
+#            for cl in self.popSet:
+#                vote = cl.getDelProp(meanFitness)
+#                #vote = cl.getDeletionVote()
+#                sumCl += vote
+#                voteList.append(vote)
+#
+#        #--------------------------------------------------------
+#        choicePoint = sumCl * random.random() #Determine the choice point
+#
+#        newSum=0.0
+#        for i in range(len(voteList)):
+#            cl = self.popSet[i]
+#            newSum = newSum + voteList[i]
+#            if newSum > choicePoint: #Select classifier for deletion
+#                #Delete classifier----------------------------------
+#                cl.updateNumerosity(-1)
+#                self.microPopSize -= 1
+#                if cl.epochComplete:
+#                    self.ECPopSize -= 1
+#                else:
+#                    self.ENCPopSize -= 1
+#
+#
+#                if cl.numerosity < 1: # When all micro-classifiers for a given classifier have been depleted.
+#                    self.removeMacroClassifier(i)
+#                    self.deleteFromMatchSet(i)
+#                    self.deleteFromCorrectSet(i)
+#                return
+#
+#        print "ClassifierSet: No eligible rules found for deletion in deleteFrom population."
+
+
     def removeMacroClassifier(self, ref):
         """ Removes the specified (macro-) classifier from the population. """
         self.popSet.pop(ref)
@@ -359,9 +617,23 @@ class ClassifierSet:
         selectList = self.selectClassifierRW()
         clP1 = selectList[0]
         clP2 = selectList[1]
+        #test selection for tree and rule crossover
 
+        """
+        if cons.selectionMethod == "roulette":
+            selectList = self.selectClassifierRW()
+            clP1 = selectList[0]
+            clP2 = selectList[1]
+        elif cons.selectionMethod == "tournament":
+            #selectList = self.selectClassifierT()
+            selectList = self.selectClassifierT(exploreIter)
+            clP1 = selectList[0]
+            clP2 = selectList[1]
+        else:
+            print "ClassifierSet: Error - requested GA selection method not available."
+        """
         cons.timer.stopTimeSelection()
-        
+
         #START GP INTEGRATION CODE*************************************************************************************************************************************
         #-------------------------------------------------------
         # INITIALIZE OFFSPRING
@@ -372,6 +644,7 @@ class ClassifierSet:
         else:
             cl1 = Classifier(clP1, exploreIter)
         if clP2 == None:  #If there was only one parent - then both 'parents' will be from the same source.  No reason to do crossover if this is the case, only mutation.
+            #print("Only one parent available")
             if clP1.isTree:
                 # cl2 = Tree(clP1, exploreIter)   ## For older Deap code
                 cl2 = tree_Clone(clP1, exploreIter)
@@ -383,7 +656,7 @@ class ClassifierSet:
                 cl2 = tree_Clone(clP2, exploreIter);
             else:
                 cl2 = Classifier(clP2, exploreIter)
-        
+
         #COUNTERS------------------ TEMPORARY
         if cl1.isTree and cl2.isTree: #both entities are trees
             self.tree_cross_count += 1
@@ -391,38 +664,38 @@ class ClassifierSet:
             self.rule_cross_count += 1
         else:
             self.both_cross_count += 1
-            
+
         #-------------------------------------------------------
         # CROSSOVER OPERATOR - Uniform Crossover Implemented (i.e. all attributes have equal probability of crossing over between two parents)
         #-------------------------------------------------------
         if cl1.equals(cl2):
-            # If parents are the same don't do crossover.
+            #print("it happened")
             pass
-        if not cl1.equals(cl2) and random.random() < cons.chi:
+        if not cl1.equals(cl2) and random.random() < cons.chi:  #If parents are the same don't do crossover.
             cons.timer.startTimeCrossover()
+            #print('------------------------------Performing Crossover')
 
             #REPORTING CROSSOVER EVENTS!------------TEMP
-            # print('------------------------------Performing Crossover')
-            # if cl1.isTree and cl2.isTree:
-            #     print('Crossing 2 Trees')
-            #     print(str(cl1)+str(cl1.specifiedAttList))
-            #     print(str(cl2)+str(cl2.specifiedAttList))
-            #     pass
-            # elif not cl1.isTree and not cl2.isTree:
-            #     print('Crossing 2 Rules')
-            #     pass
-            # else: #one of each
-            #     print('Crossing a Tree with a Rule')
-            #     if cl1.isTree:
-            #         print(str(cl1)+str(cl1.specifiedAttList))
-            #         print(str(cl2.condition)+str(cl2.specifiedAttList))
-            #         pass
-            #     else:
-            #         print(str(cl2)+str(cl2.specifiedAttList))
-            #         print(str(cl1.condition)+str(cl1.specifiedAttList))
-            #         pass
+            if cl1.isTree and cl2.isTree:
+                #print('Crossing 2 Trees')
+                #print(str(cl1.form)+str(cl1.specifiedAttList))
+                #print(str(cl2.form)+str(cl2.specifiedAttList))
+                pass
+            elif not cl1.isTree and not cl2.isTree:
+                #print('Crossing 2 Rules')
+                pass
+            else: #one of each
+                #print('Crossing a Tree with a Rule')
+                if cl1.isTree:
+                    #print(str(cl1.form)+str(cl1.specifiedAttList))
+                    #print(str(cl2.condition)+str(cl2.specifiedAttList))
+                    pass
+                else:
+                    #print(str(cl2.form)+str(cl2.specifiedAttList))
+                    #print(str(cl1.condition)+str(cl1.specifiedAttList))
+                    pass
             #--------------------------------------------------
-            
+
             changed = cl1.uniformCrossover(cl2,state, phenotype) #PERFORM CROSSOVER!  #calls either the rule or tree crossover method depending on whether cl1 is tree or rule.
             cons.timer.stopTimeCrossover()
         #-------------------------------------------------------
@@ -443,20 +716,32 @@ class ClassifierSet:
         nowchanged = True
         howaboutnow = True
         #cons.timer.stopTimeMutation()
-        
-        #Get current data point evaluation on new tree - determine phenotype and detemine if correct. 
+
+        #Get current data point evaluation on new tree - determine phenotype and detemine if correct.
         if cl1.isTree:
             #Get phenotype for current instance
             cl1.setPhenotype(state)
             #Update correct count accordingly.
             cl1.updateClonePhenotype(phenotype)
-            
+
         if cl2.isTree:
             #Get phenotype for current instance
             cl2.setPhenotype(state)
             #Update correct count accordingly.
             cl2.updateClonePhenotype(phenotype)
         #STOP GP INTEGRATION CODE*************************************************************************************************************************************
+        """
+        for cl in self.popSet:
+            if cl.isTree:
+                cl.Mutation(state, phenotype)
+        """
+        #print('Crossover output')
+        if cl1.isTree:
+            #print(str(cl1.form)+str(cl1.specifiedAttList))
+            pass
+        if cl2.isTree:
+            #print(str(cl2.form)+str(cl2.specifiedAttList))
+            pass
 
         #Generalize any continuous attributes that span then entire range observed in the dataset.
         if cons.env.formatData.continuousCount > 0:
@@ -465,13 +750,18 @@ class ClassifierSet:
         #-------------------------------------------------------
         # CONTINUOUS ENDPOINT - phenotype range probability correction
         #-------------------------------------------------------
-        if not cons.env.formatData.discretePhenotype: #Continuous Code
+        if not cons.env.formatData.discretePhenotype: #ContinuousCode #########################
             cl1.setPhenProb()
             cl2.setPhenProb()
 
         #-------------------------------------------------------
         # ADD OFFSPRING TO POPULATION
         #-------------------------------------------------------
+        #print changed
+        #print nowchanged
+        #print howaboutnow
+        #print "##############################################"
+
         if changed or nowchanged or howaboutnow:
             self.insertDiscoveredClassifiers(cl1, cl2, clP1, clP2, exploreIter) #Includes subsumption if activated.
 
@@ -772,9 +1062,9 @@ class ClassifierSet:
         else: #Brand new rule
             #cl.updateExperience()
             self.popSet.append(cl)
-        
+
         self.microPopSize += 1 #global (numerosity inclusive) popsize
-            
+
         """
         count = 0
         while oldCl != None:
@@ -784,11 +1074,9 @@ class ClassifierSet:
             if count > 50:
                 print("New Classifier: " + str(cl.specifiedAttList) + " || " + str(cl.condition))
                 print("Old Classifier: " + str(oldCl.specifiedAttList) + " || " + str(oldCl.condition))
-
                 cl = Classifier(1, 0, state, phenotype)
                 print("Other Classifier: " + str(cl.specifiedAttList) + " || " + str(cl.condition))
                 raise NameError("Classifier Covering")
-
         #cl.calcClassifierStateFreq()
         """
 
