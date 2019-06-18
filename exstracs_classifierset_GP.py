@@ -355,7 +355,7 @@ class ClassifierSet:
         # SELECT PARENTS - Niche GA - selects parents from the correct class
         # -------------------------------------------------------
         cons.timer.startTimeSelection()
-        selectList = self.selectClassifierT()
+        selectList = self.selectClassifierT(exploreIter)
         clP1 = selectList[0]
         cons.timer.stopTimeSelection()
 
@@ -454,7 +454,7 @@ class ClassifierSet:
 
     def selectClassifierT(self, exploreIter):
         """  Selects parents using tournament selection according to the fitness of the classifiers. """
-        setList = copy.deepcopy(self.correctSet)  # correct set is a list of reference IDs
+        setList = copy.deepcopy(self.correctSet) # correct set is a list of reference IDs
         if len(setList) > 2:
             selectList = [None, None]
             currentCount = 0

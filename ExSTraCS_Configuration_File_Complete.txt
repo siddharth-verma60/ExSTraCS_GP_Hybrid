@@ -22,7 +22,7 @@ labelMissingData=NA#										Indicates how missing data is labeled in the data 
 ######---------------------------------------------------------------------------------------------------------------------------------
 ######General Run Parameters
 ######---------------------------------------------------------------------------------------------------------------------------------
-trackingFrequency=0#	If 0, then learning tracking will run every epoch (i.e. every pass through all instances in the training data). Otherwise it will occur after the specified number of learning iterations.
+trackingFrequency=100#	If 0, then learning tracking will run every epoch (i.e. every pass through all instances in the training data). Otherwise it will occur after the specified number of learning iterations.
 learningIterations=50000.100000#5000.10000#.20000#.50000.100000#.200000#					Specify every iteration at which a full algorithm evaluation will be conducted and output files saved.  The last/largest value indicates the stopping point. Separate values with a period (.).
 outputSummary=1#											1 is True, 0 is False
 outputPopulation=1#											1 is True, 0 is False

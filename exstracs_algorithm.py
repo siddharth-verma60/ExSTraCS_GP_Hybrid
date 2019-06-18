@@ -28,7 +28,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #Import Required Modules-------------------------------
 from exstracs_constants import *
-from exstracs_classifierset import ClassifierSet
+from exstracs_classifierset_GP import ClassifierSet
 from exstracs_prediction import *
 from exstracs_at import *
 from exstracs_rc import RuleCompaction
@@ -92,7 +92,8 @@ class ExSTraCS:
 
         cons.env.startEvaluationMode()
         initRuleCount = int((1-cons.popInitGP) * cons.N)
-        print('Initializing population with '+str(initRuleCount)+' LCS rules.')
+        initTreeCount = int(cons.popInitGP*cons.N)
+        print('Initializing population with '+str(initRuleCount)+' LCS rules and '+str(initTreeCount)+' GP trees.')
 
         if cons.trainFile != 'None':
             if cons.env.formatData.discretePhenotype:
