@@ -23,7 +23,7 @@ labelMissingData=NA#										Indicates how missing data is labeled in the data 
 ######General Run Parameters
 ######---------------------------------------------------------------------------------------------------------------------------------
 trackingFrequency=100#	If 0, then learning tracking will run every epoch (i.e. every pass through all instances in the training data). Otherwise it will occur after the specified number of learning iterations.
-learningIterations=50000.100000#5000.10000#.20000#.50000.100000#.200000#					Specify every iteration at which a full algorithm evaluation will be conducted and output files saved.  The last/largest value indicates the stopping point. Separate values with a period (.).
+learningIterations=5000.10000#.20000#.50000.100000#.200000#					Specify every iteration at which a full algorithm evaluation will be conducted and output files saved.  The last/largest value indicates the stopping point. Separate values with a period (.).
 outputSummary=1#											1 is True, 0 is False
 outputPopulation=1#											1 is True, 0 is False
 outputAttCoOccur=1#											1 is True, 0 is False
@@ -58,12 +58,12 @@ popInitGP=1.0#					Proportion of population initially seeded with GP trees.
 ######---------------------------------------------------------------------------------------------------------------------------------
 ######Attribute Tracking and Feedback (ExSTraCS long-term memory, implemented to characterize heterogeneous patterns, and refine learning.) Tracking must be on, for feedback to be used.
 ######---------------------------------------------------------------------------------------------------------------------------------
-doAttributeTracking=1#		1 is True, 0 is False
-doAttributeFeedback=1#		1 is True, 0 is False
+doAttributeTracking=0#		1 is True, 0 is False
+doAttributeFeedback=0#		1 is True, 0 is False
 ######---------------------------------------------------------------------------------------------------------------------------------
 ######Expert Knowledge (Use a specifically formatted expert knowledge file to weight rule covering in ExSTraCS towards attributes more likely to be predictive.)
 ######---------------------------------------------------------------------------------------------------------------------------------
-useExpertKnowledge=1#			1 is True, 0 is False
+useExpertKnowledge=0#			1 is True, 0 is False
 external_EK_Generation=None#	Specify the file/path for a properly formatted expert knowledge file.  If internal EK is to be used, put `None'. (.txt extension should be left out)
 outEKFileName=Local_Output/# 			Optional EK output filepath and filename beginning, used when EK scores are generated internally within ExSTraCS.
 filterAlgorithm=multisurf#		Specify the filter algorithm to use 'relieff','surf','surfstar','multisurf' and add TuRF with 'relieff_turf','surf_turf','surfstar_turf','multisurf_turf'.

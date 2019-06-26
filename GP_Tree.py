@@ -82,7 +82,7 @@ Parameters and functions used to describe the tree are described as follows:"""
 
 
     def __init__(self, function_set=("add", "mul", "sub", "div", "cos", "sin"),\
-                num_features=None, min_depth=1, max_depth=6):
+                num_features=None, min_depth=2, max_depth=4):
 
         """The constructor of GP_Tree accepts the function set, terminal set, number of features to keep in the tree
         (eg: if the value of num_features =1, features in tree would be X0, if num_features=3, features in tree would be
@@ -113,7 +113,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.initTimeStamp = 0  # Iteration in which the rule first appeared.
         self.aveMatchSetSize = 1
 
-        self.lastMatch = 0  # Experimental - for brief fitness update
         # Classifier Accuracy Tracking --------------------------------------
         self.matchCount = 0  # Known in many LCS implementations as experience i.e. the total number of times this
         # classifier was in a match set
@@ -161,7 +160,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.epochComplete = False  # Has this rule existed for a complete epoch (i.e. a cycle through training set).
 
 
-        self.lastMatch = 0
         self.lastFitness = 0.0
         self.sumIndFitness = 1.0  # experimental
         self.partOfCorrect = True
@@ -558,29 +556,10 @@ Parameters and functions used to describe the tree are described as follows:"""
 
     def updateEpochStatus(self, exploreIter):
         """ Determines when a learning epoch has completed (one cycle through training data). """
-
         if not self.epochComplete and (
                 exploreIter - self.initTimeStamp) >= cons.env.formatData.numTrainInstances and cons.offlineData:
             self.epochComplete = True
             cons.firstEpochComplete = True
-
-            self.usefulDiff = (
-                    self.correctCover - self.phenotype_RP * self.matchCover)  #
-
-            # Pareto Fitness - Epoch Complete Front Construction
-            if self.accuracyComponent > 0 and self.usefulDiff > 0:
-                objectivePair = [self.accuracyComponent, self.usefulDiff]
-                changedme = cons.env.formatData.ecFront.updateFront(objectivePair)
-
-            #                 if changedme:
-            #                     print 'new'
-            #                     print self.accuracyComponent
-            #                     print self.usefulDiff
-            #                     print self.initTimeStamp
-            #             if self.accuracyComponent == 0.692582281546 and self.usefulDiff == 204.723:
-            #                 print'I was born and now am complete'
-            #                 print self.initTimeStamp
-
             return True
         return False
 
@@ -601,368 +580,21 @@ Parameters and functions used to describe the tree are described as follows:"""
         else:
             self.correctCover += 1
 
-    def updateError(self, trueEndpoint):
+    def updateAccuracy(self, exploreIter, trueEndpoint):
+        # -----------------------------------------------------------------------------------
+        # CALCULATE ACCURACY - RMS value
+        # -----------------------------------------------------------------------------------
         if not self.epochComplete:
-            # Error caclulations are limited to extremes of observed training data phenotypes in calculating the range centroid.
-            if self.phenotype > cons.env.formatData.phenotypeList[1]:
-                adjustedError = 1
-            elif self.phenotype < cons.env.formatData.phenotypeList[0]:
-                adjustedError = 1
-            else:
-                error = abs(self.phenotype - trueEndpoint)
-                adjustedError = error / (cons.env.formatData.phenotypeList[1] - cons.env.formatData.phenotypeList[0])
-
-            self.errorSum += adjustedError  # Error is fraction of total phenotype range (i.e. maximum possible error)
-            # if adjustedError == 0:
-            #    print("#########################################")
-
-            self.errorCount += 1
-
-    # Error for not being in the correct set
-    def updateIncorrectError(self):
-        if not self.epochComplete:
-            self.errorSum += 1.0
-            self.errorCount += 1
-
-    def updateAccuracy(self, exploreIter):
-
-
-        """ Update the accuracy tracker """
-        nonUsefulDiscount = 0.001
-        coverOpportunity = 1000
-        adjAccuracy = 0
-        # -----------------------------------------------------------------------------------
-        # CALCULATE ACCURACY
-        # -----------------------------------------------------------------------------------
-        if cons.env.formatData.discretePhenotype:
-            self.accuracy = self.correctCover / float(self.matchCover)
-        else:  # ContinuousCode #########################
-            self.accuracy = 1 - (
-                    self.errorSum / self.matchCover)  # 1- average error based on range centroid.  Should be natural pressure to achieve narrow endpoint range.
-
-        # -----------------------------------------------------------------------------------
-        # CALCULATE ADJUSTED ACCURACY
-        # -----------------------------------------------------------------------------------
-        if self.accuracy > self.phenotype_RP:
-            adjAccuracy = self.accuracy - self.phenotype_RP
-        elif self.matchCover == 2 and self.correctCover == 1 and not self.epochComplete and (
-                exploreIter - self.timeStampGA) < coverOpportunity:
-            adjAccuracy = self.phenotype_RP / 2.0
-        else:
-            adjAccuracy = self.accuracy * nonUsefulDiscount
-
-        # -----------------------------------------------------------------------------------
-        # CALCULATE ACCURACY COMPONENT
-        # -----------------------------------------------------------------------------------
-        maxAccuracy = 1 - self.phenotype_RP
-        if maxAccuracy == 0:
-            self.accuracyComponent = 0
-        else:
-            self.accuracyComponent = adjAccuracy / float(
-                maxAccuracy)  # Accuracy contribution scaled between 0 and 1 allowing for different maximum accuracies
-        self.accuracyComponent = 2 * ((1 / float(1 + math.exp(-5 * self.accuracyComponent))) - 0.5) / float(
-            0.98661429815)
-        self.accuracyComponent = math.pow(self.accuracyComponent, 1)
-
-    def updateCorrectCoverage(self):
-        self.coverDiff = (self.correctCover - self.phenotype_RP * self.matchCover)
-
-    def updateIndFitness(self, exploreIter):
-        """ Calculates the fitness of an individual rule based on it's accuracy and correct coverage relative to the 'Pareto' front """
-        coverOpportunity = 1000
-        if self.coverDiff > 0:
-            #             print 'quality'
-            # -----------------------------------------------------------------------------------
-            # CALCULATE CORRECT COVER DIFFERENCE COMPONENT
-            # -----------------------------------------------------------------------------------
-            # NOTES: Coverage is directly comparable when epoch complete, otherwise we want to estimate what coverage might be farther out.
-            if self.epochComplete:
-                # Get Pareto Metric
-                self.indFitness = cons.env.formatData.ecFront.getParetoFitness([self.accuracyComponent, self.coverDiff])
-
-            else:  # Rule Not epoch complete
-                # EXTRAPOLATE coverDiff up to number of trainin instances (i.e. age at epoch complete)
-                ruleAge = exploreIter - self.initTimeStamp + 1  # Correct, because we include the current instance we are on.
-                self.coverDiff = self.coverDiff * cons.env.formatData.numTrainInstances / float(ruleAge)
-                objectivePair = [self.accuracyComponent, self.coverDiff]
-                # BEFORE PARETO FRONTS BEGIN TO BE UPDATED
-                if len(
-                        cons.env.formatData.necFront.paretoFrontAcc) == 0:  # Nothing stored yet on incomplete epoch front
-                    # Temporarily use accuracy as fitness in this very early stage.
-                    # print 'fit path 1'
-                    self.indFitness = self.accuracyComponent
-                    if ruleAge >= coverOpportunity:  # attempt to update front
-                        cons.env.formatData.necFront.updateFront(objectivePair)
-
-                # PARETO FRONTS ONLINE
-                else:  # Some pareto front established.
-                    if len(cons.env.formatData.ecFront.paretoFrontAcc) > 0:  # Leave epoch incomplete front behind.
-                        self.indFitness = cons.env.formatData.ecFront.getParetoFitness(objectivePair)
-                        # print 'fit path 2'
-                    else:  # Keep updating and evaluating with epoch incomplete front.
-                        if ruleAge < coverOpportunity:  # Very young rules can not affect bestCoverDiff
-                            self.preFitness = cons.env.formatData.necFront.getParetoFitness(objectivePair)
-                            # print 'fit path 3'
-                        else:
-                            cons.env.formatData.necFront.updateFront(objectivePair)
-                            self.indFitness = cons.env.formatData.necFront.getParetoFitness(objectivePair)
-                            self.matchedAndFrontEstablished = True
-                            # print 'fit path 4'
-        else:
-            #             print 'poor'
-            #             print self.accuracyComponent
-            self.indFitness = self.accuracyComponent / float(1000)
-
-        if self.indFitness < 0:
-            print("negative fitness error")
-        if round(self.indFitness,
-                 5) > 1:  # rounding added to handle odd division error, where 1.0 was being treated as a very small decimal just above 1.0
-            print("big fitness error")
-
-        # self.indFitness = math.pow(self.indFitness,cons.nu)  #Removed 11/25/15 - seems redundant with accuracy version (use one or the other)
-        if self.indFitness < 0:
-            print("CoverDiff: " + str(self.coverDiff))
-            print("Accuracy: " + str(self.accuracyComponent))
-            print("Fitness: " + str(self.indFitness))
-            raise NameError("Problem with fitness")
-
-        self.lastIndFitness = copy.deepcopy(self.indFitness)
-
-        # NEW
-
-    def updateRelativeIndFitness(self, indFitSum, partOfCorrect, exploreIter):
-        """  Updates the relative individual fitness calculation """
-        self.sumIndFitness = indFitSum
-        self.partOfCorrect = partOfCorrect
-
-        # self.lastRelativeIndFitness = copy.deepcopy(self.relativeIndFitness)   #Is this needed????
-
-        if partOfCorrect:
-            self.relativeIndFitness = self.indFitness * self.numerosity / float(self.sumIndFitness)
-            # self.relativeIndFitness = self.indFitness/float(self.sumIndFitness) #Treat epoch complete or incomplete equally here.  This will give young rules a boost (in this method, relative fitness can be larger than 1 for NEC rules.
-            if self.relativeIndFitness > 1.0:
-                self.relativeIndFitness = 1.0
-        #             if self.epochComplete: #Fitness shared only with other EC rules.
-        #                 self.relativeIndFitness = self.indFitness*self.numerosity / self.sumIndFitness
-        #             else:
-        #                 if indFitSum == 0:
-        #                     self.relativeIndFitness = 0
-        #                 else:
-        #                     self.relativeIndFitness = self.indFitness*self.numerosity*(exploreIter-self.initTimeStamp+1) / self.sumIndFitness
-        else:
-            self.relativeIndFitness = 0
-
-        # NEW
+            if cons.env.formatData.discretePhenotype:
+                self.accuracy = self.correctCover / float(self.matchCover)
+                self.accuracyComponent=self.accuracy;
+            else:  # ContinuousCode #########################
+                self.accuracy +=  (trueEndpoint - self.phenotype) ** 2
+                self.accuracyComponent = -np.sqrt(self.accuracy/(exploreIter+1)) # RMS error
 
     def updateFitness(self, exploreIter):
         """ Update the fitness parameter. """
-        if self.epochComplete:
-            percRuleExp = 1.0
-        else:
-            percRuleExp = (exploreIter - self.initTimeStamp + 1) / float(cons.env.formatData.numTrainInstances)
-        # Consider the useful accuracy cutoff -  -maybe use a less dramatic change or ...na...
-        beta = 0.2
-        if self.matchCount >= 1.0 / beta:
-            # print 'fit A'
-            #                 print self.fitness
-            #                 print self.relativePreFitness
-            self.fitness = self.fitness + beta * percRuleExp * (self.relativeIndFitness - self.fitness)
-        elif self.matchCount == 1 or self.aveRelativeIndFitness == None:  # second condition handles special case after GA rule generated, but not has not gone through full matching yet
-            # print 'fit B'
-            self.fitness = self.relativeIndFitness
-            self.aveRelativeIndFitness = self.relativeIndFitness
-        #                 if self.initTimeStamp == 2:
-        #                     print self.aveRelativePreFitness
-        #                     print 5/0
-        else:
-            # print 'fit C'
-            self.fitness = (self.aveRelativeIndFitness * (
-                    self.matchCount - 1) + self.relativeIndFitness) / self.matchCount  # often, last releative prefitness is 0!!!!!!!!!!!!!!!!!!!!!!!
-            self.aveRelativeIndFitness = (self.aveRelativeIndFitness * (
-                    self.matchCount - 1) + self.relativeIndFitness) / self.matchCount
-
-        self.lastMatchFitness = copy.deepcopy(self.fitness)
-
-        self.fitness = self.indFitness
-
-        if self.fitness < 0 or round(self.fitness, 4) > 1:
-            print('Negative Fitness')
-            print(self.fitness)
-            raise NameError("problem with fitness")
-
-        # RULE FITNESS TESTING CODE------------------------------------------------------------------------------------------------------
-        #         ruleTimeID = 3279
-        #         if self.initTimeStamp == ruleTimeID:
-        #             print '-----------------'
-        #             print str(self.condition) + str(self.specifiedAttList)
-        #             print 'sumfitness '+str(self.sumIndFitness)
-        #             print 'correct? '+str(self.partOfCorrect)
-        #             print 'relIndFit ' +str(self.relativeIndFitness)
-        #             print 'fitness ' +str(self.fitness)
-
-        # self.isMatchSetFitness = True
-
-        #         if self.initTimeStamp == 2:
-        #             self.reportClassifier('matchupdate')
-        #         if self.fitness < 0.0001:
-        #             print 'fit= '+str(self.fitness)
-        #             print 'uDiff= '+str(self.usefulDiff)
-        """
-        if self.initTimeStamp == 1171:
-            print('Iteration: '+str(exploreIter))
-            print(self.numerosity)
-            print(self.aveMatchSetSize)
-            print(self.indFitness)
-            print(self.fitness)
-            print(self.deletionVote)
-        """
-
-        # NEW
-
-    def briefUpdateFitness(self, exploreIter):
-        # print 'briefupdateFit'
-        # Activated durring matchign for all epoch complete rules -
-        # Recalculate ENC rule fitness based on progression of algorithm (i.e. recalculate Coverage extrapolation and recheck pareto front - don't need to check for nondominated points
-        # this is because points can only have lower extrapolation inbetween being in a match set.  This will effect rules that deal with rare states the most.
-
-        # ALSO we need to adapt exstracs to really large datasets, where epoch complete is rare. ( consider prediction (weight votes by experience),
-        # also consider that INcomplete pareto front might be most important (maybe not shift entirely over to EC front
-
-        # Also revisit compaction - for big data - don't want to automatically remove rules that are not EC - want to include a percent data cutoff - could be same as for iterations passing, so that for small datasets, we alway use epoch complete
-        # but for big ones we use experienced ENC rules.
-        # Also revisit adjustment of all fitness to be no higher than best area ratio when over the front in extrapolation.
-        # self.reportClassifier('lastupdate')
-
-        # Recalculate coverDiff (this should not have changed)  This could be stored, so as not to have to recalculate
-        # coverDiff = self.correctCover - self.phenotype_RP*self.matchCover
-        indFitness = None
-        # Criteria for a fitness update:
-        # if self.partOfCorrect and coverDiff > 0 and self.matchedAndFrontEstablished == True and (len(cons.env.formatData.necFront.paretoFrontAcc) > 0 or len(cons.env.formatData.ecFront.paretoFrontAcc) > 0): #fitness only changes if was last part of a correct set - cause otherwise releativePreFitness stays at 0
-        # print(self.coverDiff)
-        if self.coverDiff > 0 and self.matchedAndFrontEstablished == True and (
-                len(cons.env.formatData.necFront.paretoFrontAcc) > 0 or len(
-            cons.env.formatData.ecFront.paretoFrontAcc) > 0):  # fitness only changes if was last part of a correct set - cause otherwise releativePreFitness stays at 0
-            #             print 'NEW NEW NEW NEW NEW NEW NEW NEW'
-            #             print 'Before correction-----------------------'
-            #             print 'fitTYPE= ' +str(self.isMatchSetFitness)
-            #             print 'fit= '+str(self.fitness)
-            #             print 'pFit= '+str(self.preFitness)
-            #             print 'uDiff= '+str(self.coverDiff)
-            # lastPreFitness = copy.deepcopy(self.indFitness)
-
-            # EXTRAPOLATE coverDiff up to number of training instances (i.e. age at epoch complete) This changes because more iterations have gone by.*******
-            ruleAge = exploreIter - self.initTimeStamp + 1  # Correct, because we include the current instance we are on.
-            coverDiff = self.coverDiff * cons.env.formatData.numTrainInstances / float(ruleAge)
-            #             if coverDiff > self.coverDiff and self.coverDiff != None:
-            #                 print 'exploreIter= '+str(exploreIter)
-            #                 print 'InitTimestamp+1= ' + str(self.initTimeStamp+1)
-            #                 print 'ruleAge= '+ str(ruleAge)
-            #                 x = 5/0
-
-            # Get new pareto fitness
-            objectivePair = [self.accuracyComponent, coverDiff]
-            # BEFORE PARETO FRONTS BEGIN TO BE UPDATED
-            if len(cons.env.formatData.ecFront.paretoFrontAcc) > 0:  # Leave epoch incomplete front behind.
-                indFitness = cons.env.formatData.ecFront.getParetoFitness(objectivePair)
-                # print 'EC'
-            else:  # Keep updating and evaluating with epoch incomplete front.
-                indFitness = cons.env.formatData.necFront.getParetoFitness(objectivePair)
-                # print 'ENC'
-            #             print 'pFit= '+str(self.indFitness
-            indFitness = math.pow(indFitness, cons.nu)
-
-            #             if self.lastPreFitness < self.indFitness or self.lastPreFitness < indFitness:
-            #                 if self.initTimeStamp == 2:
-            #                     print "SWITCHING OVER FROM ACCURCY TO PARETO FRONT"
-            #                     self.reportClassifier('update')
-            # x = 5/0
-
-            # Calculate new adjusted fitness by using last matching update score and recalculating.  (preserve originals so that updates are always based on originals, not on updated estimate)
-            tempSumIndFitness = copy.deepcopy(self.sumIndFitness)
-            # tempSumIndFitness = tempSumIndFitness - self.indFitness*self.numerosity   #this is not the true sum, but the sum with out the current rule's fitness.
-            tempSumIndFitness = tempSumIndFitness - self.indFitness
-            if self.lastIndFitness != indFitness:  # ok because with many new rules they may still be maxed out at highest fitness possible.
-                #             if self.epochComplete: #Fitness shared only with other EC rules.
-                #                 self.relativeIndFitness = self.indFitness*self.numerosity / self.sumPreFitness
-                #             else:
-                #                 self.relativeIndFitness = self.indFitness*self.numerosity*(exploreIter-self.initTimeStamp+1) / self.sumPreFitness
-                # NOTE - have to re-adjust sumprefitnessnec to account for change in indFitness
-
-                # Readjust sumIndFitness with new indFitness information. (this is an estimate, because the other rules may have changed.
-                # tempSumIndFitness = tempSumIndFitness + indFitness*self.numerosity
-                tempSumIndFitness = tempSumIndFitness + indFitness
-                # self.relativeIndFitness = indFitness*self.numerosity / tempSumIndFitness
-                self.relativeIndFitness = indFitness / float(tempSumIndFitness)
-
-                percRuleExp = (exploreIter - self.initTimeStamp + 1) / float(cons.env.formatData.numTrainInstances)
-                # Consider the useful accuracy cutoff -  -maybe use a less dramatic change or ...na...
-                beta = 0.2
-                if self.matchCount >= 1.0 / beta:
-
-                    self.fitness = self.lastMatchFitness + beta * percRuleExp * (
-                            self.relativeIndFitness - self.lastMatchFitness)
-                elif self.matchCount == 1 or self.aveRelativeIndFitness == None:  # second condition handles special case after GA rule generated, but not has not gone through full matching yet
-                    # print 'fit B'
-                    self.fitness = self.relativeIndFitness
-                    # self.aveRelativeIndFitness = self.relativeIndFitness
-                #                 if self.initTimeStamp == 2:
-                #                     print self.aveRelativePreFitness
-                #                     print 5/0
-                else:
-                    # print 'fit C'
-                    self.fitness = (self.aveRelativeIndFitness * (
-                            self.matchCount - 1) + self.relativeIndFitness) / self.matchCount  # often, last releative prefitness is 0!!!!!!!!!!!!!!!!!!!!!!!
-                    # self.aveRelativeIndFitness = (self.aveRelativeIndFitness*(self.matchCount-1)+self.relativeIndFitness)/self.matchCount
-
-            #                 if cons.env.formatData.discretePhenotype:
-            #                     #Consider the useful accuracy cutoff -  -maybe use a less dramatic change or ...na...
-            #                     beta = 0.2
-            #                     if self.matchCount >= 1.0/beta:
-            #                         self.fitness = self.lastMatchFitness + beta*(self.relativeIndFitness-self.lastMatchFitness)
-            #                     elif self.matchCount == 1:
-            #                         self.fitness = self.relativeIndFitness
-            #                     else:
-            #                         self.fitness = (self.aveRelativeIndFitness*(self.matchCount-1)+self.relativeIndFitness)/self.matchCount
-            #
-            #
-            #                     #self.fitness = self.indFitness #TEMPORARY
-            #                 else: #ContinuousCode #########################
-            #                     #UPDATE NEEDED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #                     if (self.phenotype[1]-self.phenotype[0]) >= cons.env.formatData.phenotypeRange:
-            #                         self.fitness = pow(0.0001, 5)
-            #                     else:
-            #                         if self.matchCover < 2 and self.epochComplete:
-            #                             self.fitness = pow(0.0001, 5)
-            #                         else:
-            #                             self.fitness = pow(self.accuracy, cons.nu) #- (self.phenotype[1]-self.phenotype[0])/cons.env.formatData.phenotypeRange)
-
-            # self.isMatchSetFitness = False
-            #                 x= 5/0
-            #                 if self.initTimeStamp == 2:
-            #                     self.reportClassifier('update')
-            else:  # No fitness extrapolation update required
-                #                 if self.initTimeStamp == 2:
-                #                     print 'no update required B'
-                pass
-        else:  # No fitness extrapolation update required
-            #             if self.initTimeStamp == 2:
-            #                 print 'no update required A'
-            pass
-
-        # self.reportClassifier('update')
-        if round(self.fitness, 5) > 1:
-            self.fitness = 1.0
-            print('FITNESS ERROR - adjust - too high')
-        if self.fitness < 0:
-            self.fitness = 0.0
-            print('FITNESS ERROR - adjust - too low')
-            # print self.fitness
-
-            # x = 5/0
-
-        self.lastIndFitness = copy.deepcopy(
-            indFitness)  # TARGET - won't this cause below to never run?  - also where is lastIndFitness first stored??don't see it above.
-        self.fitness = self.indFitness
+        self.fitness = self.accuracyComponent
 
     def updateNumerosity(self, num):
         """ Alters the numberosity of the classifier.  Notice that num can be negative! """
@@ -1673,8 +1305,7 @@ def mutation_Uniform_Helper(parent_to_mutate, random_subtree_root):
     if ancestor_mutation_point is None:  # If root is chosen as the Mutation-point, perform mutation through
         # Node-Replacement method. This has been suggested by Ryan.
 
-        print("Root was selected as the mutation point. Therefore, Uniform Mutation can't occur. Performing Mutation \
-        through Node-Replacement Method")
+        print("Root was selected as the mutation point. Therefore, Uniform Mutation can't occur. Performing Mutation through Node-Replacement Method")
         offspring = mutation_NodeReplacement(parent_to_mutate)
         return offspring
 

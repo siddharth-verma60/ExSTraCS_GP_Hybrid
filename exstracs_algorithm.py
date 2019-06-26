@@ -295,7 +295,7 @@ class ExSTraCS:
                 else:
                     self.correct[self.exploreIter%cons.trackingFrequency] = 0
 
-            else: #ContinuousCode #########################
+            else:
         #-------------------------------------------------------
         # CONTINUOUS PHENOTYPE PREDICTION
         #-------------------------------------------------------

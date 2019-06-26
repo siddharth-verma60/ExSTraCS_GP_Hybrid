@@ -58,11 +58,6 @@ class ClassifierSet:
         self.attributeAccList = []
         self.avePhenotypeRange = 0.0
 
-        # Test parameters ------------------------------------
-        self.tree_cross_count = 0
-        self.rule_cross_count = 0
-        self.both_cross_count = 0
-
         # Parameter for continuous trees
         self.tree_error = None  # changing error threshold for trees to be considered in the correct set
 
@@ -81,15 +76,13 @@ class ClassifierSet:
         """ Initializes the rule population """
         self.popSet = []
         # Initialize Population of Trees----------------------
-        # hardcode num Trees for now
 
         if cons.useGP:
             # Initialize Population of Trees----------------------
             gpInit = cons.popInitGP * cons.N
             print("Initializing Tree population with " + str(int(gpInit)) + " GP trees.")
             # initialize marked tree for testing
-            for x in range(0, int(cons.popInitGP * cons.N) - 1):
-                # newTree = Tree() ## For older DEAP code.
+            for x in range(0, int(cons.popInitGP * cons.N)):
                 newTree = GP_Tree()
                 self.popSet.append(newTree)
             print("Tree Initialization Complete")
@@ -125,16 +118,12 @@ class ClassifierSet:
             numerosityRef = 5  # location of numerosity variable in population file.
             self.microPopSize += int(each[numerosityRef])
 
-    #             if cl.epochComplete:
-    #                 self.ECPopSize += int(each[numerosityRef])
-    #             else:
-    #                 self.ENCPopSize += int(each[numerosityRef])
-
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # CLASSIFIER SET CONSTRUCTOR METHODS
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def makeMatchSet(self, state_phenotype, exploreIter):
         """ Constructs a match set from the population. Covering is initiated if the match set is empty or a rule with the current correct phenotype is absent. """
+
         # Initial values----------------------------------
         state = state_phenotype[0]
         phenotype = state_phenotype[1]
@@ -142,7 +131,6 @@ class ClassifierSet:
         # --------------------------------------------------------
         # Define phenotypes for trees
         # --------------------------------------------------------
-
         for i in range(len(self.popSet)):
             cl = self.popSet[i]
             if cl.isTree:
@@ -170,8 +158,6 @@ class ClassifierSet:
             for cl in self.popSet:
                 if cl.isTree:
                     cl.calcPhenProb(self.tree_error)
-
-        doCovering = True  # Covering check: Twofold (1)checks that a match is present, and (2) that at least one match dictates the correct phenotype.
         setNumerositySum = 0
 
         # -------------------------------------------------------
@@ -180,43 +166,12 @@ class ClassifierSet:
         cons.timer.startTimeMatching()
         for i in range(len(self.popSet)):  # Go through the population
             cl = self.popSet[i]  # One classifier at a time
-            epochCompleted = False
-            epochCompleted = cl.updateEpochStatus(
-                exploreIter)  # Note whether this classifier has seen all training data at this point.
-            #             if epochCompleted:
-            #                 self.ECPopSize += cl.numerosity       #Epoch Complete - Micro Pop Size
-            #                 self.ENCPopSize -= cl.numerosity      #Epoch Not Complete - Micro Pop Size
-            # Fitness Update------------------------------
-            if not cl.epochComplete and (exploreIter - cl.lastMatch) >= cons.noMatchUpdate:
-                cl.briefUpdateFitness(exploreIter)
+            cl.updateEpochStatus(exploreIter)  # Note whether this classifier has seen all training data at this point.
 
             if cl.match(state):  # Check for match
-                cl.lastMatch = exploreIter  # Experimental::::: for brief fitness update.
                 self.matchSet.append(i)  # If match - add classifier to match set
                 setNumerositySum += cl.numerosity  # Increment the set numerosity sum
-                # Covering Check--------------------------------------------------------
-                if cons.env.formatData.discretePhenotype:  # Discrete phenotype
-                    if cl.phenotype == phenotype and not cl.isTree:  # Check for phenotype coverage
-                        doCovering = False
-                else:  # ContinuousCode #########################
-                    if not cl.isTree and float(cl.phenotype[0]) <= float(phenotype) <= float(
-                            cl.phenotype[1]):  # Check for phenotype coverage
-                        doCovering = False
-
         cons.timer.stopTimeMatching()
-        # -------------------------------------------------------
-        # COVERING
-        # -------------------------------------------------------
-        if doCovering:
-            # print('Covered new rule')
-            pass
-        while doCovering:
-            cons.timer.startTimeCovering()
-            newCl = Classifier(setNumerositySum + 1, exploreIter, state, phenotype)
-            self.addCoveredClassifierToPopulation(newCl)
-            self.matchSet.append(len(self.popSet) - 1)  # Add covered classifier to matchset
-            doCovering = False
-            cons.timer.stopTimeCovering()
 
     def makeCorrectSet(self, phenotype):
         """ Constructs a correct set out of the given match set. """
@@ -231,30 +186,8 @@ class ClassifierSet:
             # -------------------------------------------------------
             # CONTINUOUS PHENOTYPE
             # -------------------------------------------------------
-            else:  # ContinuousCode #########################
-                if not self.popSet[ref].isTree:  # RULES
-                    if float(phenotype) <= float(self.popSet[ref].phenotype[1]) and float(phenotype) >= float(
-                            self.popSet[ref].phenotype[0]):
-                        self.correctSet.append(ref)
-                else:  # TREES
-                    # We won't use any notion of a correct set for GP trees.  USe error to determine correct set for att tracking downstream, but not used for accuracy update.
-                    if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
-                        self.correctSet.append(ref)
-
-        """
-        if exploreIter % 100 == 0 and exploreIter > 0:
-            numRules = 0
-            numTrees = 0
-
-            for i in self.correctSet:
-                cl = self.popSet[i]
-                if cl.isTree:
-                    numTrees += 1
-                else:
-                    numRules += 1
-
-            print "CorrectSet - NumTrees: " + str(numTrees) + " NumRules: " + str(numRules)
-        """
+            if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
+                self.correctSet.append(ref)
 
     def makeEvalMatchSet(self, state):
         """ Constructs a match set for evaluation purposes which does not activate either covering or deletion. """
@@ -312,7 +245,7 @@ class ClassifierSet:
         return
 
     def removeMacroClassifier(self, ref):
-        """ Removes the specified (macro-) classifier from the population. """
+        """ Removes the specified (macro) classifier from the population. """
         self.popSet.pop(ref)
 
     def deleteFromMatchSet(self, deleteRef):
@@ -403,7 +336,7 @@ class ClassifierSet:
         # -------------------------------------------------------
         # MUTATION OPERATOR
         # -------------------------------------------------------
-        elif operation_decider<cons.chi:
+        else:
             cons.timer.startTimeMutation()
             changed = cl1.Mutation(state, phenotype)
             cons.timer.stopTimeMutation()
@@ -422,7 +355,6 @@ class ClassifierSet:
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # SELECTION METHODS
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
     def selectClassifierRW(self):
         """ Selects parents using roulette wheel selection according to the fitness of the classifiers. """
         setList = copy.deepcopy(self.correctSet)  # correct set is a list of reference IDs
@@ -555,14 +487,6 @@ class ClassifierSet:
                 ref = self.correctSet[i]
                 if subsumer.isMoreGeneral(self.popSet[ref]):
                     subsumer.updateNumerosity(self.popSet[ref].numerosity)
-                    #                     if subsumer.epochComplete:
-                    #                         if not self.popSet[ref].epochComplete:
-                    #                             self.ECPopSize += 1
-                    #                             self.ENCPopSize -= 1
-                    #                     else:
-                    #                         if self.popSet[ref].epochComplete:
-                    #                             self.ECPopSize -= 1
-                    #                             self.ENCPopSize += 1
 
                     self.removeMacroClassifier(ref)
                     self.deleteFromMatchSet(ref)
@@ -570,105 +494,20 @@ class ClassifierSet:
                     i = i - 1
                 i = i + 1
 
-    # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # OTHER KEY METHODS
-    # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #    def addClassifierToPopulation(self, cl, covering, exploreIter=None):
-    #        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
-    #        cons.timer.startTimeAdd()
-    #        oldCl = None
-    #        if not covering:
-    #            oldCl = self.getIdenticalClassifier(cl)
-    #        if oldCl != None: #found identical classifier
-    #            oldCl.updateNumerosity(1)
-    #            self.microPopSize += 1
-    #        else:
-    #            #NEW Fitness-----------------------------
-    #            cl.calcClassifierStateFreq()  #Calculates classifier state frequency once when rule is added to the population from covering or GA
-    #            if not covering:
-    #                #GA rules will have an initial fitness calculated based on this first exposure
-    #                cl.updateFitness(exploreIter)
-    #            #-----------------------------------------
-    #            self.popSet.append(cl)
-    #            self.microPopSize += 1
-    #        cons.timer.stopTimeAdd()
-
     def addGAClassifierToPopulation(self, cl, exploreIter):
-        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
 
-        # print "Classifier Added"
+        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
         cons.timer.startTimeAdd()
         oldCl = self.getIdenticalClassifier(cl)
 
         if oldCl != None:  # found identical classifier
             oldCl.updateNumerosity(1)
             self.microPopSize += 1
-        #             if oldCl.epochComplete:
-        #                 self.ECPopSize += 1
-        #             else:
-        #                 self.ENCPopSize += 1
         else:
-            # NEW Fitness-----------------------------
-            # cl.calcClassifierStateFreq()  #Calculates classifier state frequency once when rule is added to the population from covering or GA
-            # GA rules will have an initial fitness calculated based on this first exposure
-            # cl.updateFitness(exploreIter)
-            # -----------------------------------------
-
             self.popSet.append(cl)
             self.microPopSize += 1
-        #             if cl.epochComplete:
-        #                 self.ECPopSize += 1
-        #             else:
-        #                 self.ENCPopSize += 1
         cons.timer.stopTimeAdd()
 
-    def addCoveredClassifierToPopulation(self, cl):
-        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
-        cons.timer.startTimeAdd()
-        # NEW Fitness-----------------------------
-        # cl.calcClassifierStateFreq()  #Calculates classifier state frequency once when rule is added to the population from covering or GA
-        # -----------------------------------------
-
-        self.popSet.append(cl)
-        self.microPopSize += 1
-        #         if cl.epochComplete:
-        #             self.ECPopSize += 1
-        #         else:
-        #             self.ENCPopSize += 1
-        cons.timer.stopTimeAdd()
-
-    # START GP INTEGRATION CODE*************************************************************************************************************************************
-    def addClassifierForInit(self, state, phenotype):
-        # temporarily turn off expert knowledge
-
-        cl = Classifier(1, 0, state, phenotype)
-        oldCl = self.getIdenticalClassifier(cl)
-        if oldCl != None:  # Copy found
-            oldCl.numerosity += 1
-        else:  # Brand new rule
-            # cl.updateExperience()
-            self.popSet.append(cl)
-
-        self.microPopSize += 1  # global (numerosity inclusive) popsize
-
-        """
-        count = 0
-        while oldCl != None:
-            cl = Classifier(1, 0, state, phenotype)
-            oldCl = self.getIdenticalClassifier(cl)
-            count+=1
-            if count > 50:
-                print("New Classifier: " + str(cl.specifiedAttList) + " || " + str(cl.condition))
-                print("Old Classifier: " + str(oldCl.specifiedAttList) + " || " + str(oldCl.condition))
-
-                cl = Classifier(1, 0, state, phenotype)
-                print("Other Classifier: " + str(cl.specifiedAttList) + " || " + str(cl.condition))
-                raise NameError("Classifier Covering")
-
-        #cl.calcClassifierStateFreq()
-        """
-
-    # STOP GP INTEGRATION CODE*************************************************************************************************************************************
 
     def insertDiscoveredClassifiers(self, cl1, cl2, clP1, clP2, exploreIter):
         """ Inserts both discovered classifiers keeping the maximal size of the population and possibly doing GA subsumption.
@@ -692,88 +531,21 @@ class ClassifierSet:
             if cl2.isTree or len(cl2.specifiedAttList) > 0:
                 self.addGAClassifierToPopulation(cl2, exploreIter)
 
-    #    def updateSets(self, exploreIter):
-    #        """ Updates all relevant parameters in the current match and correct sets. """
-    #        matchSetNumerosity = 0
-    #        for ref in self.matchSet:
-    #            matchSetNumerosity += self.popSet[ref].numerosity
-    #
-    #        for ref in self.matchSet:
-    #            self.popSet[ref].updateExperience()
-    #            self.popSet[ref].updateMatchSetSize(matchSetNumerosity) #Moved to match set to be like GHCS
-    #            if ref in self.correctSet:
-    #                self.popSet[ref].updateCorrect()
-    #
-    #            self.popSet[ref].updateAccuracy()
-    #            self.popSet[ref].updateFitness(exploreIter) #NEW FITNESS
-    #            #self.popSet[ref].updateFitness()
-
-    # NEW
     def updateSets(self, exploreIter, trueEndpoint):
         """ Updates all relevant parameters in the current match and correct sets. """
         matchSetNumerosity = 0
-        #         preFitSumNEC = 0.0
-        #         preFitSumEC = 0.0
-        # preFitSumList = [0.0]*cons.env.formatData.specLimit
         indFitSum = 0.0
-        # weightSum = 0.0
-        # print 'lenMatchSet= '+str(len(self.matchSet))
-        #        correctSetNumerosity = 0
+
         for ref in self.matchSet:
             matchSetNumerosity += self.popSet[ref].numerosity
-        # Experimental!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #        for ref in self.correctSet:
-        #            correctSetNumerosity += self.popSet[ref].numerosity
 
         for ref in self.matchSet:
             self.popSet[ref].updateExperience()
             self.popSet[ref].updateMatchSetSize(matchSetNumerosity)  # Moved to match set to be like GHCS
             if ref in self.correctSet:
                 self.popSet[ref].updateCorrect()
-                if not cons.env.formatData.discretePhenotype:  # Continuous endpoint
-                    self.popSet[ref].updateError(trueEndpoint)
-            else:  # Continuous endpoint gets Error added for not being in the correct set.
-                if not cons.env.formatData.discretePhenotype:  # Continuous endpoint
-                    self.popSet[ref].updateIncorrectError()
 
-            self.popSet[ref].updateAccuracy(exploreIter)
-            self.popSet[ref].updateCorrectCoverage()
-            self.popSet[ref].updateIndFitness(exploreIter)
-            # preFitSumAll += self.popSet[ref].numerosity*self.popSet[ref].indFitness
-
-            if ref in self.correctSet:
-                if self.popSet[ref].epochComplete:
-                    indFitSum += self.popSet[ref].numerosity * self.popSet[ref].indFitness
-                    # indFitSum += self.popSet[ref].indFitness
-                    # weightSum += 1.0
-                else:  # epoch not complete (rules contribution to indFitness is proportional to experience)
-                    percRuleExp = (exploreIter - self.popSet[ref].initTimeStamp + 1) / float(
-                        cons.env.formatData.numTrainInstances)  # Weight for weighted average
-                    indFitSum += self.popSet[ref].numerosity * self.popSet[ref].indFitness * percRuleExp
-                    # indFitSum += self.popSet[ref].indFitness*percRuleExp
-                    # weightSum += percRuleExp
-
-        #             if self.popSet[ref].epochComplete:
-        #                 if ref in self.correctSet:
-        #                     preFitSumEC += self.popSet[ref].numerosity*self.popSet[ref].indFitness
-        #             else:
-        #                 if ref in self.correctSet:
-        #                     preFitSumNEC += self.popSet[ref].numerosity*self.popSet[ref].indFitness
-        # print self.popSet[ref].numerosity*self.popSet[ref].indFitness
-
-        # Fitness Sharing
-        # indWeightedFitSum = indFitSum/float(weightSum)
-        # print 'new'
-        # print indFitSum
-        # print weightSum
-        # print indWeightedFitSum
-        for ref in self.matchSet:
-            if ref in self.correctSet:
-                partOfCorrect = True
-            else:
-                partOfCorrect = False
-            self.popSet[ref].updateRelativeIndFitness(indFitSum, partOfCorrect, exploreIter)
-            # self.popSet[ref].updateRelativePreFitness(preFitSumNEC,preFitSumEC, partOfCorrect)
+            self.popSet[ref].updateAccuracy(exploreIter, trueEndpoint)
             self.popSet[ref].updateFitness(exploreIter)
 
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
