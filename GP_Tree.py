@@ -590,7 +590,7 @@ Parameters and functions used to describe the tree are described as follows:"""
                 self.accuracyComponent=self.accuracy;
             else:  # ContinuousCode #########################
                 self.accuracy +=  (trueEndpoint - self.phenotype) ** 2
-                self.accuracyComponent = -np.sqrt(self.accuracy/(exploreIter+1)) # RMS error
+                self.accuracyComponent = 1/np.sqrt(self.accuracy/(exploreIter+1)) # RMS error
 
     def updateFitness(self, exploreIter):
         """ Update the fitness parameter. """

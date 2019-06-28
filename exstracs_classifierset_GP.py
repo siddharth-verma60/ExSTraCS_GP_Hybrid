@@ -189,6 +189,7 @@ class ClassifierSet:
             if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
                 self.correctSet.append(ref)
 
+
     def makeEvalMatchSet(self, state):
         """ Constructs a match set for evaluation purposes which does not activate either covering or deletion. """
         for i in range(len(self.popSet)):  # Go through the population
@@ -411,7 +412,7 @@ class ClassifierSet:
                     if self.popSet[j].fitness * percentExperience > bestF:
                         bestF = self.popSet[j].fitness * percentExperience
                         bestC = j
-                setList.remove(j)  # select without re-sampling
+                setList.remove(bestC)  # select without re-sampling
                 selectList[currentCount] = self.popSet[bestC]
                 currentCount += 1
         elif len(setList) == 2:
@@ -547,6 +548,7 @@ class ClassifierSet:
 
             self.popSet[ref].updateAccuracy(exploreIter, trueEndpoint)
             self.popSet[ref].updateFitness(exploreIter)
+
 
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # OTHER METHODS
