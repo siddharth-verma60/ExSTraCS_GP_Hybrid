@@ -303,9 +303,8 @@ Parameters and functions used to describe the tree are described as follows:"""
 
         return
 
-        # Breadth-First-Traversal of the tree. It first reads the left child, then the node itself and then the
-        # right child.
-
+    # Breadth-First-Traversal of the tree. It first reads the left child, then the node itself and then the
+    # right child.
     def tree_expression_BFS(self):
         q = deque()  # BFS is implemented using a queue (FIFO)
         expression = []  # Expression to be built and returned.

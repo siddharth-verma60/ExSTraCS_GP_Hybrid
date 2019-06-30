@@ -188,8 +188,8 @@ class ExSTraCS:
                 OutputFileManager().save_tracking(self.exploreIter, cons.outFileName)
                 OutputFileManager().writePredictions(self.exploreIter, cons.outFileName, self.predictionList, self.realList, self.predictionSets)
                 cons.timer.stopTimeOutFile()
-                if self.exploreIter + 1 == cons.maxLearningIterations:
-                    FitnessLandscape(self.population)
+                # if self.exploreIter + 1 == cons.maxLearningIterations:
+                #     FitnessLandscape(self.population)
 
                 #if self.exploreIter + 1 == cons.maxLearningIterations:
                     #plotPopulation(self.population, self.exploreIter)

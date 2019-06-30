@@ -143,8 +143,8 @@ class Prediction:
                         if cl.phenotype == None:
                             raise NameError("phenotype is none")
 
-                        value+= cl.phenotype
-                        treeCount+=1
+                        value+= cl.phenotype*cl.numerosity
+                        treeCount+=cl.numerosity
 
                         # print("value: ", value, " tree count: ", treeCount)
 

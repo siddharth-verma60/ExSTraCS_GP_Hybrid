@@ -318,7 +318,7 @@ class ClassifierSet:
             # -------------------------------------------------------
             if changed:
                 cl1.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
-                cl2.setFitness(cl1.fitness)
+                cl2.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
 
                 # Get phenotype for current instance
                 cl1.setPhenotype(state)
@@ -346,6 +346,7 @@ class ClassifierSet:
             cl1.setPhenotype(state)
             # Update correct count accordingly.
             cl1.updateClonePhenotype(phenotype)
+            cl1.setFitness(cons.fitnessReduction * cl1.fitness)
 
         # -------------------------------------------------------
         # ADD OFFSPRING TO POPULATION
@@ -561,7 +562,7 @@ class ClassifierSet:
             ref = self.correctSet[i]
             sumCl += self.popSet[ref].timeStampGA * self.popSet[ref].numerosity
             numSum += self.popSet[ref].numerosity  # numerosity sum of correct set
-        return sumCl / float(numSum)
+        return sumCl/float(numSum) if numSum else 0
 
     def setIterStamps(self, exploreIter):
         """ Sets the time stamp of all classifiers in the set to the current time. The current time
