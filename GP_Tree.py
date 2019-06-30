@@ -589,7 +589,7 @@ Parameters and functions used to describe the tree are described as follows:"""
                 self.accuracyComponent=self.accuracy;
             else:  # ContinuousCode #########################
                 self.accuracy +=  (trueEndpoint - self.phenotype) ** 2
-                self.accuracyComponent = 1/np.sqrt(self.accuracy/(exploreIter+1)) # RMS error
+                self.accuracyComponent = 1/(np.sqrt(self.accuracy/(exploreIter+1)) + 1e-7) # RMS error
 
     def updateFitness(self, exploreIter):
         """ Update the fitness parameter. """
@@ -723,7 +723,7 @@ def tree_Clone(clOld, exploreIter):
     offspring.lastMatch = exploreIter
     offspring.aveMatchSetSize = copy.deepcopy(clOld.aveMatchSetSize)
     offspring.fitness = clOld.fitness  # Test removal
-    offspring.accuracy = clOld.accuracy
+    offspring.accuracy = 0
     offspring.relativeIndFitness = clOld.relativeIndFitness
     offspring.indFitness = clOld.indFitness
     offspring.sumIndFitness = clOld.sumIndFitness
