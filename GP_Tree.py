@@ -454,7 +454,7 @@ Parameters and functions used to describe the tree are described as follows:"""
             mutation_NodeReplacement(self)
         else:
             # Option 2: Call this method
-            randomTree=GP_Tree(min_depth=3, max_depth=4)
+            randomTree=GP_Tree(min_depth=1, max_depth=3)
             randomTree.generate_half_and_half()
             mutation_Uniform(self, randomTree)
 
@@ -718,7 +718,7 @@ def tree_Clone(clOld, exploreIter):
     offspring.phenotype = None
     offspring.phenotype_RP = None
 
-    offspring.timeStampGA = exploreIter  # consider starting at 0 instead???
+    offspring.timeStampGA = 0  # consider starting at 0 instead???
     offspring.initTimeStamp = exploreIter
     offspring.lastMatch = exploreIter
     offspring.aveMatchSetSize = copy.deepcopy(clOld.aveMatchSetSize)
@@ -727,7 +727,7 @@ def tree_Clone(clOld, exploreIter):
     offspring.relativeIndFitness = clOld.relativeIndFitness
     offspring.indFitness = clOld.indFitness
     offspring.sumIndFitness = clOld.sumIndFitness
-    offspring.accuracyComponent = clOld.accuracyComponent
+    offspring.accuracyComponent = None
     offspring.matchCount = 1  # Known in many LCS implementations as experience i.e. the total number of times this
     # classifier was in a match set
     offspring.correctCount = None  # The total number of times this classifier was in a correct set
