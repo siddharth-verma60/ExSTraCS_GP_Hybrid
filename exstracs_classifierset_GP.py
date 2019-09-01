@@ -186,8 +186,8 @@ class ClassifierSet:
             # -------------------------------------------------------
             # CONTINUOUS PHENOTYPE
             # -------------------------------------------------------
-            if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
-                self.correctSet.append(ref)
+            # if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
+            self.correctSet.append(ref)
 
 
     def makeEvalMatchSet(self, state):

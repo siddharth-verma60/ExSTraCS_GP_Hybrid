@@ -589,14 +589,14 @@ Parameters and functions used to describe the tree are described as follows:"""
                 self.accuracyComponent=self.accuracy;
             else:  # ContinuousCode #########################
                 self.accuracy +=  (trueEndpoint - self.phenotype) ** 2
-                self.accuracyComponent = 1/(np.sqrt(self.accuracy/(exploreIter+1)) + 1e-7) # RMS error
+                self.accuracyComponent = 1/(1+np.sqrt(self.accuracy/(exploreIter+1))) # RMS error
 
     def updateFitness(self, exploreIter):
         """ Update the fitness parameter. """
         self.fitness = self.accuracyComponent
 
     def updateNumerosity(self, num):
-        """ Alters the numberosity of the classifier.  Notice that num can be negative! """
+        """ Alters the numerosity of the classifier.  Notice that num can be negative! """
         self.numerosity += num
 
     def updateMatchSetSize(self, matchSetSize):
