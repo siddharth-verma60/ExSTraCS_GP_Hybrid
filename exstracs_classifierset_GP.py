@@ -168,6 +168,9 @@ class ClassifierSet:
             cl = self.popSet[i]  # One classifier at a time
             cl.updateEpochStatus(exploreIter)  # Note whether this classifier has seen all training data at this point.
 
+            if cons.env.formatData.discretePhenotype and not cl.epochComplete and (exploreIter - cl.lastMatch) >= cons.noMatchUpdate:
+                cl.briefUpdateFitness(exploreIter)
+
             if cl.match(state):  # Check for match
                 self.matchSet.append(i)  # If match - add classifier to match set
                 setNumerositySum += cl.numerosity  # Increment the set numerosity sum
@@ -177,17 +180,12 @@ class ClassifierSet:
         """ Constructs a correct set out of the given match set. """
         for i in range(len(self.matchSet)):
             ref = self.matchSet[i]
-            # -------------------------------------------------------
-            # DISCRETE PHENOTYPE
-            # -------------------------------------------------------
+
             if cons.env.formatData.discretePhenotype:
                 if self.popSet[ref].phenotype == phenotype:
                     self.correctSet.append(ref)
-            # -------------------------------------------------------
-            # CONTINUOUS PHENOTYPE
-            # -------------------------------------------------------
-            # if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
-            self.correctSet.append(ref)
+            else:
+                self.correctSet.append(ref)
 
 
     def makeEvalMatchSet(self, state):
@@ -278,7 +276,7 @@ class ClassifierSet:
         # -------------------------------------------------------
         # GA RUN REQUIREMENT
         # -------------------------------------------------------
-        if ( exploreIter - self.getIterStampAverage()) < cons.theta_GA:  # Does the correct set meet the requirements for activating the GA?
+        if (exploreIter - self.getIterStampAverage()) < cons.theta_GA:  # Does the correct set meet the requirements for activating the GA?
             return
 
         # Updates the iteration time stamp for all rules in the correct set (which the GA operates on).
@@ -548,7 +546,30 @@ class ClassifierSet:
                 self.popSet[ref].updateCorrect()
 
             self.popSet[ref].updateAccuracy(exploreIter, trueEndpoint)
-            self.popSet[ref].updateFitness(exploreIter)
+
+            if cons.env.formatData.discretePhenotype:
+                self.popSet[ref].updateCorrectCoverage()
+                self.popSet[ref].updateIndFitness(exploreIter)
+
+                if ref in self.correctSet:
+                    if self.popSet[ref].epochComplete:
+                        indFitSum += self.popSet[ref].numerosity * self.popSet[ref].indFitness
+                    else:
+                        percRuleExp = (exploreIter - self.popSet[ref].initTimeStamp + 1) / float(
+                            cons.env.formatData.numTrainInstances)
+                        indFitSum += self.popSet[ref].numerosity * self.popSet[ref].indFitness * percRuleExp
+
+            else:
+                self.popSet[ref].updateFitness(exploreIter)
+
+        if cons.env.formatData.discretePhenotype:
+            for ref in self.matchSet:
+                if ref in self.correctSet:
+                    partOfCorrect = True
+                else:
+                    partOfCorrect = False
+                self.popSet[ref].updateRelativeIndFitness(indFitSum, partOfCorrect, exploreIter)
+                self.popSet[ref].updateFitness(exploreIter)
 
 
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

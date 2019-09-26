@@ -22,8 +22,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #Import Required Modules-------------------------------
 from exstracs_constants import *
 from exstracs_classifier import Classifier
-# from exstracs_tree import *
-from GP_Tree import *
+from exstracs_tree import *
+# from GP_Tree import *
 print()
 import random
 import copy
@@ -84,8 +84,7 @@ class ClassifierSet:
             print("Initializing Tree population with "+str(int(gpInit))+" GP trees.")
             #initialize marked tree for testing
             for x in range(0, int(cons.popInitGP * cons.N)-1):
-                # newTree = Tree() ## For older DEAP code.
-                newTree = GP_Tree()
+                newTree = Tree()
                 self.popSet.append(newTree)
             print("Tree Initialization Complete")
 
@@ -639,21 +638,18 @@ class ClassifierSet:
         # INITIALIZE OFFSPRING
         #-------------------------------------------------------
         if clP1.isTree:
-            # cl1 = Tree(clP1, exploreIter) ## For older Deap code
-            cl1 = tree_Clone(clP1, exploreIter)
+            cl1 = Tree(clP1, exploreIter)
         else:
             cl1 = Classifier(clP1, exploreIter)
         if clP2 == None:  #If there was only one parent - then both 'parents' will be from the same source.  No reason to do crossover if this is the case, only mutation.
             #print("Only one parent available")
             if clP1.isTree:
-                # cl2 = Tree(clP1, exploreIter)   ## For older Deap code
-                cl2 = tree_Clone(clP1, exploreIter)
+                cl2 = Tree(clP1, exploreIter)
             else:
                 cl2 = Classifier(clP1, exploreIter)
         else:
             if clP2.isTree:
-                # cl2 = Tree(clP2, exploreIter)   ## For older Deap code
-                cl2 = tree_Clone(clP2, exploreIter);
+                cl2 = Tree(clP2, exploreIter)
             else:
                 cl2 = Classifier(clP2, exploreIter)
 

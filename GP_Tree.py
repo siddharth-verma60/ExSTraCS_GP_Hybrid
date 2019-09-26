@@ -26,7 +26,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 
-
 import numpy as np
 import random
 import string
@@ -80,9 +79,8 @@ Parameters and functions used to describe the tree are described as follows:"""
 
             return retval
 
-
-    def __init__(self, function_set=("add", "mul", "sub", "div", "cos", "sin"),\
-                num_features=None, min_depth=2, max_depth=4):
+    def __init__(self, function_set=("add", "mul", "sub", "div", "cos", "sin"), \
+                 num_features=None, min_depth=2, max_depth=4):
 
         """The constructor of GP_Tree accepts the function set, terminal set, number of features to keep in the tree
         (eg: if the value of num_features =1, features in tree would be X0, if num_features=3, features in tree would be
@@ -122,7 +120,6 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.correctCover = 0  # The total number of times this classifier was in a correct set within a single epoch.
         # (value fixed after epochComplete)
 
-
         self.condition = None
         self.errorSum = 0
         self.errorCount = 0
@@ -131,7 +128,7 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.totalFreq = 1
         self.id = ''.join(random.choice(string.ascii_lowercase) for i in range(7))
         self.one_count = 0  # Used for keeping count of 1s in binary classification.
-        self.zero_count = 0 # Used for keeping count of 0s in binary classification.
+        self.zero_count = 0  # Used for keeping count of 0s in binary classification.
         self.isTree = True
 
         # Major Parameters --------------------------------------------------
@@ -158,7 +155,7 @@ Parameters and functions used to describe the tree are described as follows:"""
 
         # Experience Management ---------------------------------------------
         self.epochComplete = False  # Has this rule existed for a complete epoch (i.e. a cycle through training set).
-
+        self.lastMatch = 0
 
         self.lastFitness = 0.0
         self.sumIndFitness = 1.0  # experimental
@@ -209,7 +206,7 @@ Parameters and functions used to describe the tree are described as follows:"""
 
         temp_list.extend(self.terminal_set)
         self.terminal_set = temp_list
-        random.shuffle(self.terminal_set) # Shuffling the terminal list.
+        random.shuffle(self.terminal_set)  # Shuffling the terminal list.
 
     @staticmethod
     def create_node(data):
@@ -340,12 +337,13 @@ Parameters and functions used to describe the tree are described as follows:"""
         # Reshaping denotes that this is a single sample with number of features = the length of the input args.
         args = np.asarray(args).reshape(1, len(args))
         dataInfo = cons.env.formatData
+        evaluatedPhenotype = self.evaluate(args)
 
         # -------------------------------------------------------
         # BINARY PHENOTYPE
         # -------------------------------------------------------
         if dataInfo.discretePhenotype and len(dataInfo.phenotypeList) == 2:
-            if self.evaluate(args) > 0:
+            if evaluatedPhenotype > 0:
                 self.phenotype = '1'
                 if not self.epochComplete:
                     self.one_count += 1
@@ -356,8 +354,8 @@ Parameters and functions used to describe the tree are described as follows:"""
 
             if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examine more carefully.
                 self.phenotype_RP = ((cons.env.formatData.classProportions['1'] * self.one_count) + (
-                            cons.env.formatData.classProportions['0'] * self.zero_count)) / (
-                                                self.one_count + self.zero_count)
+                        cons.env.formatData.classProportions['0'] * self.zero_count)) / (
+                                            self.one_count + self.zero_count)
                 # For trees there could be one uniform random chance. Ultimately we want to use balanced accuracy for trees (do we do better than by chance) but for now we will just use 0.5 for simplicity.
 
         # -------------------------------------------------------
@@ -365,15 +363,15 @@ Parameters and functions used to describe the tree are described as follows:"""
         # -------------------------------------------------------
         elif dataInfo.discretePhenotype and not len(dataInfo.phenotypeList) == 2:
 
-            if self.evaluate(args) < 0:  # Lowest class
+            if evaluatedPhenotype < 0:  # Lowest class
                 self.phenotype = dataInfo.phenotypeList[0]
-            elif self.evaluate(args) >= len(dataInfo.phenotypeList) - 1:  # Highest class
+            elif evaluatedPhenotype >= len(dataInfo.phenotypeList) - 1:  # Highest class
                 self.phenotype = dataInfo.phenotypeList[len(dataInfo.phenotypeList) - 1]
             else:  # one of the middle classes
                 count = 1
                 notfoundClass = True
                 while notfoundClass:
-                    if self.evaluate(args) < count and self.evaluate(args) >= count - 1:
+                    if evaluatedPhenotype < count and evaluatedPhenotype >= count - 1:
                         self.phenotype = dataInfo.phenotypeList[count]
                         notfoundClass = False
                     if count > len(dataInfo.phenotypeList):
@@ -388,10 +386,9 @@ Parameters and functions used to describe the tree are described as follows:"""
         # CONTINUOUS PHENOTYPE
         # -------------------------------------------------------
         else:
-            self.phenotype = self.evaluate(args)
+            self.phenotype = evaluatedPhenotype
             if not self.epochComplete:  # Not sure where Ben came up with this but it seems to makes reasonable sense.  May want to examie more carefully.
                 self.phenotype_RP = 0.5
-
 
     # This function evaluates the syntax tree and returns the value evaluated by the tree.
     def evaluate(self, X_Data):
@@ -420,7 +417,7 @@ Parameters and functions used to describe the tree are described as follows:"""
             if isinstance(node.data, str):
                 feature_name = node.data
                 index = int(feature_name[1:])
-                return X_Data[index]
+                return float(X_Data[index])
 
             else:
                 return node.data
@@ -450,14 +447,13 @@ Parameters and functions used to describe the tree are described as follows:"""
 
         # Choose any method with 50:50 probability.
         if flip is 0:
-            # Option 1: Call this method
+            # Option 1:
             mutation_NodeReplacement(self)
         else:
-            # Option 2: Call this method
-            randomTree=GP_Tree(min_depth=1, max_depth=3)
+            # Option 2:
+            randomTree = GP_Tree(min_depth=1, max_depth=3)
             randomTree.generate_half_and_half()
             mutation_Uniform(self, randomTree)
-
 
         return str(self) == str(origform)
 
@@ -559,6 +555,15 @@ Parameters and functions used to describe the tree are described as follows:"""
                 exploreIter - self.initTimeStamp) >= cons.env.formatData.numTrainInstances and cons.offlineData:
             self.epochComplete = True
             cons.firstEpochComplete = True
+
+            if cons.env.formatData.discretePhenotype:
+                self.usefulDiff = (
+                        self.correctCover - self.phenotype_RP * self.matchCover)
+                # Pareto Fitness - Epoch Complete Front Construction
+                if self.accuracyComponent > 0 and self.usefulDiff > 0:
+                    objectivePair = [self.accuracyComponent, self.usefulDiff]
+                    changedme = cons.env.formatData.ecFront.updateFront(objectivePair)
+
             return True
         return False
 
@@ -585,15 +590,193 @@ Parameters and functions used to describe the tree are described as follows:"""
         # -----------------------------------------------------------------------------------
         if not self.epochComplete:
             if cons.env.formatData.discretePhenotype:
+                nonUsefulDiscount = 0.001
+                coverOpportunity = 1000
+
+                # -----------------------------------------------------------------------------------
+                # CALCULATE ACCURACY
+                # -----------------------------------------------------------------------------------
                 self.accuracy = self.correctCover / float(self.matchCover)
-                self.accuracyComponent=self.accuracy;
-            else:  # ContinuousCode #########################
-                self.accuracy +=  (trueEndpoint - self.phenotype) ** 2
-                self.accuracyComponent = 1/(1+np.sqrt(self.accuracy/(exploreIter+1))) # RMS error
+
+                # -----------------------------------------------------------------------------------
+                # CALCULATE ADJUSTED ACCURACY
+                # -----------------------------------------------------------------------------------
+                if self.accuracy > self.phenotype_RP:
+                    adjAccuracy = self.accuracy - self.phenotype_RP
+                elif self.matchCover == 2 and self.correctCover == 1 and not self.epochComplete and (
+                        exploreIter - self.timeStampGA) < coverOpportunity:
+                    adjAccuracy = self.phenotype_RP / 2.0
+                else:
+                    adjAccuracy = self.accuracy * nonUsefulDiscount
+                # -----------------------------------------------------------------------------------
+                # CALCULATE ACCURACY COMPONENT
+                # -----------------------------------------------------------------------------------
+                maxAccuracy = 1 - self.phenotype_RP
+                if maxAccuracy == 0:
+                    self.accuracyComponent = 0
+                else:
+                    self.accuracyComponent = adjAccuracy / float(
+                        maxAccuracy)  # Accuracy contribution scaled between 0 and 1 allowing for different maximum accuracies
+                self.accuracyComponent = 2 * ((1 / float(1 + math.exp(-5 * self.accuracyComponent))) - 0.5) / float(
+                    0.98661429815)
+                self.accuracyComponent = math.pow(self.accuracyComponent, 1)
+
+            else:  # Continuous Phenotype
+                self.accuracy += (trueEndpoint - self.phenotype) ** 2
+                self.accuracyComponent = 1 / (1 + np.sqrt(self.accuracy / (exploreIter + 1)))  # RMS error
+
+    def updateCorrectCoverage(self):
+        self.coverDiff = (self.correctCover - self.phenotype_RP * self.matchCover)
 
     def updateFitness(self, exploreIter):
         """ Update the fitness parameter. """
-        self.fitness = self.accuracyComponent
+        if cons.env.formatData.discretePhenotype:
+            if self.epochComplete:
+                percRuleExp = 1.0
+            else:
+                percRuleExp = (exploreIter - self.initTimeStamp + 1) / float(cons.env.formatData.numTrainInstances)
+            beta = 0.2
+            if self.matchCount >= 1.0 / beta:
+                self.fitness = self.fitness + beta * percRuleExp * (self.relativeIndFitness - self.fitness)
+            elif self.matchCount == 1 or self.aveRelativeIndFitness == None:  # second condition handles special case after GA rule generated, but not has not gone through full matching yet
+                self.fitness = self.relativeIndFitness
+                self.aveRelativeIndFitness = self.relativeIndFitness
+            else:
+                self.fitness = (self.aveRelativeIndFitness * (
+                        self.matchCount - 1) + self.relativeIndFitness) / self.matchCount  # often, last releative prefitness is 0!!!!!!!!!!!!!!!!!!!!!!!
+                self.aveRelativeIndFitness = (self.aveRelativeIndFitness * (
+                        self.matchCount - 1) + self.relativeIndFitness) / self.matchCount
+
+            self.lastMatchFitness = copy.deepcopy(self.fitness)
+
+            self.fitness = self.indFitness
+
+            if self.fitness < 0 or round(self.fitness, 4) > 1:
+                print('Negative Fitness')
+                print(self.fitness)
+                raise NameError("problem with fitness")
+        else:
+            self.fitness = self.accuracyComponent
+
+    # For discrete phenotype
+    def updateIndFitness(self, exploreIter):
+
+        """ Calculates the fitness of an individual rule based on it's accuracy and correct coverage relative to the 'Pareto' front """
+        coverOpportunity = 1000
+        if self.coverDiff > 0:
+            # -----------------------------------------------------------------------------------
+            # CALCULATE CORRECT COVER DIFFERENCE COMPONENT
+            # -----------------------------------------------------------------------------------
+            # NOTES: Coverage is directly comparable when epoch complete, otherwise we want to estimate what coverage might be farther out.
+            if self.epochComplete:
+                # Get Pareto Metric
+                self.indFitness = cons.env.formatData.ecFront.getParetoFitness([self.accuracyComponent, self.coverDiff])
+
+            else:  # Rule Not epoch complete
+                # EXTRAPOLATE coverDiff up to number of training instances (i.e. age at epoch complete)
+                ruleAge = exploreIter - self.initTimeStamp + 1  # Correct, because we include the current instance we are on.
+                self.coverDiff = self.coverDiff * cons.env.formatData.numTrainInstances / float(ruleAge)
+                objectivePair = [self.accuracyComponent, self.coverDiff]
+                # BEFORE PARETO FRONTS BEGIN TO BE UPDATED
+                if len(
+                        cons.env.formatData.necFront.paretoFrontAcc) == 0:  # Nothing stored yet on incomplete epoch front
+                    self.indFitness = self.accuracyComponent
+                    if ruleAge >= coverOpportunity:  # attempt to update front
+                        cons.env.formatData.necFront.updateFront(objectivePair)
+
+                # PARETO FRONTS ONLINE
+                else:  # Some pareto front established.
+                    if len(cons.env.formatData.ecFront.paretoFrontAcc) > 0:  # Leave epoch incomplete front behind.
+                        self.indFitness = cons.env.formatData.ecFront.getParetoFitness(objectivePair)
+                    else:  # Keep updating and evaluating with epoch incomplete front.
+                        if ruleAge < coverOpportunity:  # Very young rules can not affect bestCoverDiff
+                            self.preFitness = cons.env.formatData.necFront.getParetoFitness(objectivePair)
+                        else:
+                            cons.env.formatData.necFront.updateFront(objectivePair)
+                            self.indFitness = cons.env.formatData.necFront.getParetoFitness(objectivePair)
+                            self.matchedAndFrontEstablished = True
+        else:
+            self.indFitness = self.accuracyComponent / float(1000)
+
+        if self.indFitness < 0:
+            print("negative fitness error")
+        if round(self.indFitness,
+                 5) > 1:  # rounding added to handle odd division error, where 1.0 was being treated as a very small decimal just above 1.0
+            print("big fitness error")
+
+        if self.indFitness < 0:
+            print("CoverDiff: " + str(self.coverDiff))
+            print("Accuracy: " + str(self.accuracyComponent))
+            print("Fitness: " + str(self.indFitness))
+            raise NameError("Problem with fitness")
+
+        self.lastIndFitness = copy.deepcopy(self.indFitness)
+
+    def updateRelativeIndFitness(self, indFitSum, partOfCorrect, exploreIter):
+        """  Updates the relative individual fitness calculation """
+        self.sumIndFitness = indFitSum
+        self.partOfCorrect = partOfCorrect
+
+        if partOfCorrect:
+            self.relativeIndFitness = self.indFitness * self.numerosity / float(self.sumIndFitness)
+            if self.relativeIndFitness > 1.0:
+                self.relativeIndFitness = 1.0
+        else:
+            self.relativeIndFitness = 0
+
+    def briefUpdateFitness(self, exploreIter):
+        indFitness = None
+
+        if self.coverDiff > 0 and self.matchedAndFrontEstablished == True and (
+                len(cons.env.formatData.necFront.paretoFrontAcc) > 0 or len(
+            cons.env.formatData.ecFront.paretoFrontAcc) > 0):
+            ruleAge = exploreIter - self.initTimeStamp + 1  # Correct, because we include the current instance we are on.
+            coverDiff = self.coverDiff * cons.env.formatData.numTrainInstances / float(ruleAge)
+
+            # Get new pareto fitness
+            objectivePair = [self.accuracyComponent, coverDiff]
+            # BEFORE PARETO FRONTS BEGIN TO BE UPDATED
+            if len(cons.env.formatData.ecFront.paretoFrontAcc) > 0:  # Leave epoch incomplete front behind.
+                indFitness = cons.env.formatData.ecFront.getParetoFitness(objectivePair)
+            else:  # Keep updating and evaluating with epoch incomplete front.
+                indFitness = cons.env.formatData.necFront.getParetoFitness(objectivePair)
+            indFitness = math.pow(indFitness, cons.nu)
+
+            # Calculate new adjusted fitness by using last matching update score and recalculating.  (preserve originals so that updates are always based on originals, not on updated estimate)
+            tempSumIndFitness = copy.deepcopy(self.sumIndFitness)
+            tempSumIndFitness = tempSumIndFitness - self.indFitness
+            if self.lastIndFitness != indFitness:  # ok because with many new rules they may still be maxed out at highest fitness possible.
+
+                tempSumIndFitness = tempSumIndFitness + indFitness
+                self.relativeIndFitness = indFitness / float(tempSumIndFitness)
+
+                percRuleExp = (exploreIter - self.initTimeStamp + 1) / float(cons.env.formatData.numTrainInstances)
+                beta = 0.2
+                if self.matchCount >= 1.0 / beta:
+
+                    self.fitness = self.lastMatchFitness + beta * percRuleExp * (
+                            self.relativeIndFitness - self.lastMatchFitness)
+                elif self.matchCount == 1 or self.aveRelativeIndFitness == None:
+                    self.fitness = self.relativeIndFitness
+                else:
+                    self.fitness = (self.aveRelativeIndFitness * (
+                            self.matchCount - 1) + self.relativeIndFitness) / self.matchCount
+
+            else:
+                pass
+        else:
+            pass
+
+        if round(self.fitness, 5) > 1:
+            self.fitness = 1.0
+            print('FITNESS ERROR - adjust - too high')
+        if self.fitness < 0:
+            self.fitness = 0.0
+            print('FITNESS ERROR - adjust - too low')
+
+        self.lastIndFitness = copy.deepcopy(
+            indFitness)
+        self.fitness = self.indFitness
 
     def updateNumerosity(self, num):
         """ Alters the numerosity of the classifier.  Notice that num can be negative! """
@@ -652,7 +835,6 @@ Parameters and functions used to describe the tree are described as follows:"""
 
         return "".join(retval)
 
-
     def printClassifier(self):
 
         classifierString = ""
@@ -702,6 +884,8 @@ Parameters and functions used to describe the tree are described as follows:"""
 
 #####################################################################################################
 ''' The Definition of the functions that are related to the population of the syntax trees.'''
+
+
 #####################################################################################################
 
 #####################################################################################
@@ -1304,7 +1488,8 @@ def mutation_Uniform_Helper(parent_to_mutate, random_subtree_root):
     if ancestor_mutation_point is None:  # If root is chosen as the Mutation-point, perform mutation through
         # Node-Replacement method. This has been suggested by Ryan.
 
-        print("Root was selected as the mutation point. Therefore, Uniform Mutation can't occur. Performing Mutation through Node-Replacement Method")
+        print(
+            "Root was selected as the mutation point. Therefore, Uniform Mutation can't occur. Performing Mutation through Node-Replacement Method")
         offspring = mutation_NodeReplacement(parent_to_mutate)
         return offspring
 
