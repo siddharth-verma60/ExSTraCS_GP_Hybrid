@@ -25,167 +25,184 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 
-#Import Required Modules-------------------------------
+# Import Required Modules-------------------------------
 from exstracs_constants import *
 import random
-#------------------------------------------------------
+
+
+# ------------------------------------------------------
 
 class Prediction:
-    def __init__(self, population, exploreIter):  #now takes in population ( have to reference the match set to do prediction)  pop.matchSet
+    def __init__(self, population,
+                 exploreIter):  # now takes in population ( have to reference the match set to do prediction)  pop.matchSet
         """ Constructs the voting array and determines the prediction decision. """
         self.decision = None
-        #self.classCount
-        #-------------------------------------------------------
+        # self.classCount
+        # -------------------------------------------------------
         # DISCRETE PHENOTYPE
-        #-------------------------------------------------------
+        # -------------------------------------------------------
         if cons.env.formatData.discretePhenotype:
-            self.vote = {}
-            self.tieBreak_Numerosity = {}
-            self.tieBreak_TimeStamp = {}
 
-            for eachClass in cons.env.formatData.phenotypeList:
-                self.vote[eachClass] = 0.0
-                self.tieBreak_Numerosity[eachClass] = 0
-                self.tieBreak_TimeStamp[eachClass] = 0.0
-
+            # Temporary voting method:
+            num_ones = 0
+            num_zeros = 0
             for ref in population.matchSet:
                 cl = population.popSet[ref]
-                if cons.firstEpochComplete and cl.epochComplete:
-                    #self.vote[cl.phenotype] += cl.fitness * cl.numerosity
-                    #self.vote[cl.phenotype] += cl.fitness * cl.numerosity# * cons.env.formatData.classPredictionWeights[cl.phenotype]
-                    self.vote[cl.phenotype] += cl.fitness * cl.indFitness * cl.numerosity# * cons.env.formatData.classPredictionWeights[cl.phenotype]
-                    #self.vote[cl.phenotype] += cl.fitness * cons.env.formatData.classPredictionWeights[cl.phenotype]
-                    #self.vote[cl.phenotype] += cl.fitness
-                    self.tieBreak_Numerosity[cl.phenotype] += cl.numerosity
-                    self.tieBreak_TimeStamp[cl.phenotype] += cl.initTimeStamp
-                elif not cons.firstEpochComplete:
-                    ageDiscount = (exploreIter-cl.initTimeStamp+1.0)/float(cons.env.formatData.numTrainInstances)
-                    self.vote[cl.phenotype] += ageDiscount*cl.fitness * cl.indFitness * cl.numerosity# * cons.env.formatData.classPredictionWeights[cl.phenotype]
-                    self.tieBreak_Numerosity[cl.phenotype] += ageDiscount*cl.numerosity
-                    self.tieBreak_TimeStamp[cl.phenotype] += cl.initTimeStamp
-
-            highVal = 0.0
-            bestClass = [] #Prediction is set up to handle best class ties for problems with more than 2 classes
-            for thisClass in cons.env.formatData.phenotypeList:
-                if self.tieBreak_Numerosity[thisClass] > 0:
-                    if self.vote[thisClass]/self.tieBreak_Numerosity[thisClass] >= highVal:
-                        highVal = self.vote[thisClass]/self.tieBreak_Numerosity[thisClass]
-
-            for thisClass in cons.env.formatData.phenotypeList:
-                if self.tieBreak_Numerosity[thisClass] > 0:
-                    if self.vote[thisClass]/self.tieBreak_Numerosity[thisClass] == highVal: #Tie for best class
-                        bestClass.append(thisClass)
-            #---------------------------
-            if highVal == 0.0:
-                self.decision = None
-            #-----------------------------------------------------------------------
-            elif len(bestClass) > 1: #Randomly choose between the best tied classes
-                bestNum = 0
-                newBestClass = []
-                for thisClass in bestClass:
-                    if self.tieBreak_Numerosity[thisClass] >= bestNum:
-                        bestNum = self.tieBreak_Numerosity[thisClass]
-
-                for thisClass in bestClass:
-                    if self.tieBreak_Numerosity[thisClass] == bestNum:
-                        newBestClass.append(thisClass)
-
-                #-----------------------------------------------------------------------
-                if len(newBestClass) > 1:  #still a tie
-                    bestStamp = 0
-                    newestBestClass = []
-                    for thisClass in newBestClass:
-                        if self.tieBreak_TimeStamp[thisClass] >= bestStamp:
-                            bestStamp = self.tieBreak_TimeStamp[thisClass]
-
-                    for thisClass in newBestClass:
-                        if self.tieBreak_TimeStamp[thisClass] == bestStamp:
-                            newestBestClass.append(thisClass)
-                    #-----------------------------------------------------------------------
-                    if len(newestBestClass) > 1: # Prediction is completely tied - ExSTraCS has no useful information for making a prediction
-                        #self.decision = random.choice(newestBestClass)
-                        self.decision = 'Tie'
-                        #return a tie as a list to choose from (for multi-class - so a more educated guess may be made.
+                if cl.phenotype == '1':
+                    num_ones += 1
                 else:
-                    self.decision = newBestClass[0]
-            #----------------------------------------------------------------------
-            else: #One best class determined by fitness vote
-                self.decision = bestClass[0]
+                    num_zeros += 1
+            self.decision = '1' if num_ones > num_zeros else '0'
+
+            self.vote = {}
+            # self.tieBreak_Numerosity = {}
+            # self.tieBreak_TimeStamp = {}
+            #
+            # for eachClass in cons.env.formatData.phenotypeList:
+            #     self.vote[eachClass] = 0.0
+            #     self.tieBreak_Numerosity[eachClass] = 0
+            #     self.tieBreak_TimeStamp[eachClass] = 0.0
+            #
+            # for ref in population.matchSet:
+            #     cl = population.popSet[ref]
+            #     if cons.firstEpochComplete and cl.epochComplete:
+            #         # self.vote[cl.phenotype] += cl.fitness * cl.numerosity
+            #         # self.vote[cl.phenotype] += cl.fitness * cl.numerosity# * cons.env.formatData.classPredictionWeights[cl.phenotype]
+            #         self.vote[
+            #             cl.phenotype] += cl.fitness * cl.indFitness * cl.numerosity  # * cons.env.formatData.classPredictionWeights[cl.phenotype]
+            #         # self.vote[cl.phenotype] += cl.fitness * cons.env.formatData.classPredictionWeights[cl.phenotype]
+            #         # self.vote[cl.phenotype] += cl.fitness
+            #         self.tieBreak_Numerosity[cl.phenotype] += cl.numerosity
+            #         self.tieBreak_TimeStamp[cl.phenotype] += cl.initTimeStamp
+            #     elif not cons.firstEpochComplete:
+            #         ageDiscount = (exploreIter - cl.initTimeStamp + 1.0) / float(cons.env.formatData.numTrainInstances)
+            #         self.vote[
+            #             cl.phenotype] += ageDiscount * cl.fitness * cl.indFitness * cl.numerosity  # * cons.env.formatData.classPredictionWeights[cl.phenotype]
+            #         self.tieBreak_Numerosity[cl.phenotype] += ageDiscount * cl.numerosity
+            #         self.tieBreak_TimeStamp[cl.phenotype] += cl.initTimeStamp
+            #
+            # highVal = 0.0
+            # bestClass = []  # Prediction is set up to handle best class ties for problems with more than 2 classes
+            # for thisClass in cons.env.formatData.phenotypeList:
+            #     if self.tieBreak_Numerosity[thisClass] > 0:
+            #         if self.vote[thisClass] / self.tieBreak_Numerosity[thisClass] >= highVal:
+            #             highVal = self.vote[thisClass] / self.tieBreak_Numerosity[thisClass]
+            #
+            # for thisClass in cons.env.formatData.phenotypeList:
+            #     if self.tieBreak_Numerosity[thisClass] > 0:
+            #         if self.vote[thisClass] / self.tieBreak_Numerosity[thisClass] == highVal:  # Tie for best class
+            #             bestClass.append(thisClass)
+            # # ---------------------------
+            # if highVal == 0.0:
+            #     self.decision = None
+            # # -----------------------------------------------------------------------
+            # elif len(bestClass) > 1:  # Randomly choose between the best tied classes
+            #     bestNum = 0
+            #     newBestClass = []
+            #     for thisClass in bestClass:
+            #         if self.tieBreak_Numerosity[thisClass] >= bestNum:
+            #             bestNum = self.tieBreak_Numerosity[thisClass]
+            #
+            #     for thisClass in bestClass:
+            #         if self.tieBreak_Numerosity[thisClass] == bestNum:
+            #             newBestClass.append(thisClass)
+            #
+            #     # -----------------------------------------------------------------------
+            #     if len(newBestClass) > 1:  # still a tie
+            #         bestStamp = 0
+            #         newestBestClass = []
+            #         for thisClass in newBestClass:
+            #             if self.tieBreak_TimeStamp[thisClass] >= bestStamp:
+            #                 bestStamp = self.tieBreak_TimeStamp[thisClass]
+            #
+            #         for thisClass in newBestClass:
+            #             if self.tieBreak_TimeStamp[thisClass] == bestStamp:
+            #                 newestBestClass.append(thisClass)
+            #         # -----------------------------------------------------------------------
+            #         if len(
+            #                 newestBestClass) > 1:  # Prediction is completely tied - ExSTraCS has no useful information for making a prediction
+            #             # self.decision = random.choice(newestBestClass)
+            #             self.decision = 'Tie'
+            #             # return a tie as a list to choose from (for multi-class - so a more educated guess may be made.
+            #     else:
+            #         self.decision = newBestClass[0]
+            # # ----------------------------------------------------------------------
+            # else:  # One best class determined by fitness vote
+            #     self.decision = bestClass[0]
 
 
-        #-------------------------------------------------------
+        # -------------------------------------------------------
         # CONTINUOUS PHENOTYPE
-        #-------------------------------------------------------
-        #Grab unique upper and lower bounds from every rule in the match set.
-        #Order list to discriminate pools
-        #Go through M and add vote to each pool (i.e. fitness*numerosity)
-        #Determine which (shortest) span has the largest vote.
-        #Quick version is to take the centroid of this 'best' span
-        #OR - identify any M rules that cover whole 'best' span, and use centroid voting that includes only these rules.
+        # -------------------------------------------------------
+        # Grab unique upper and lower bounds from every rule in the match set.
+        # Order list to discriminate pools
+        # Go through M and add vote to each pool (i.e. fitness*numerosity)
+        # Determine which (shortest) span has the largest vote.
+        # Quick version is to take the centroid of this 'best' span
+        # OR - identify any M rules that cover whole 'best' span, and use centroid voting that includes only these rules.
 
-        else: #ContinuousCode #########################
+        else:  # ContinuousCode #########################
             if len(population.matchSet) < 1:
                 self.decision = None
             else:
                 segmentList = []
-                treeCount=0
-                value=0
+                treeCount = 0
+                value = 0
                 for ref in population.matchSet:
                     cl = population.popSet[ref]
-                    if not cl.isTree:
-                        high = cl.phenotype[1]
-                        low = cl.phenotype[0]
-                        if not high in segmentList:
-                            segmentList.append(high)
-                        if not low in segmentList:
-                            segmentList.append(low)
-                    else:
-                        if cl.phenotype == None:
-                            raise NameError("phenotype is none")
+                    # if not cl.isTree:
+                    #     high = cl.phenotype[1]
+                    #     low = cl.phenotype[0]
+                    #     if not high in segmentList:
+                    #         segmentList.append(high)
+                    #     if not low in segmentList:
+                    #         segmentList.append(low)
+                    # else:
+                    #     if cl.phenotype == None:
+                    #         raise NameError("phenotype is none")
 
-                        value+= cl.phenotype*cl.numerosity
-                        treeCount+=cl.numerosity
+                    value += cl.phenotype * cl.numerosity
+                    treeCount += cl.numerosity
 
                         # print("value: ", value, " tree count: ", treeCount)
 
                 # When rules are switched OFF, we return the average of phenotypes from the tree ensemble.
-                if(cons.popInitGP == 1.0):
-                    self.decision = value/treeCount
+                if (cons.popInitGP == 1.0):
+                    self.decision = value / treeCount
                     return
 
-                segmentList.sort()
-                voteList = []
-                for i in range(0,len(segmentList)-1):
-                    voteList.append(0)
-
-                #PART 2
-                for ref in population.matchSet:
-                    cl = population.popSet[ref]
-                    if not cl.isTree:
-                        high = cl.phenotype[1]
-                        low = cl.phenotype[0]
-                        #j = 0
-                        for j in range(len(segmentList)-1):
-                            if low <= segmentList[j] and high >= segmentList[j+1]:
-                                voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
-                    # else:
-                    #     for j in range(len(segmentList)-1):
-                    #         if segmentList[j] <= value and value <= segmentList[j+1]:
-                    #             voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
-
-                # PART 3
-                bestVote = max(voteList)
-                bestRef = voteList.index(bestVote)
-                bestlow = segmentList[bestRef]
-                besthigh = segmentList[bestRef+1]
-                centroid = (bestlow + besthigh) / 2.0
-
-                self.decision = centroid
+                # segmentList.sort()
+                # voteList = []
+                # for i in range(0, len(segmentList) - 1):
+                #     voteList.append(0)
+                #
+                # # PART 2
+                # for ref in population.matchSet:
+                #     cl = population.popSet[ref]
+                #     if not cl.isTree:
+                #         high = cl.phenotype[1]
+                #         low = cl.phenotype[0]
+                #         # j = 0
+                #         for j in range(len(segmentList) - 1):
+                #             if low <= segmentList[j] and high >= segmentList[j + 1]:
+                #                 voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
+                #     # else:
+                #     #     for j in range(len(segmentList)-1):
+                #     #         if segmentList[j] <= value and value <= segmentList[j+1]:
+                #     #             voteList[j] += cl.numerosity * cl.fitness * cl.indFitness
+                #
+                # # PART 3
+                # bestVote = max(voteList)
+                # bestRef = voteList.index(bestVote)
+                # bestlow = segmentList[bestRef]
+                # besthigh = segmentList[bestRef + 1]
+                # centroid = (bestlow + besthigh) / 2.0
+                #
+                # self.decision = centroid
 
     def getDecision(self):
         """ Returns prediction decision. """
         return self.decision
-
 
     def getSet(self):
         """ Returns prediction decision. """

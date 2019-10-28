@@ -168,7 +168,8 @@ class ClassifierSet:
             cl = self.popSet[i]  # One classifier at a time
             cl.updateEpochStatus(exploreIter)  # Note whether this classifier has seen all training data at this point.
 
-            if cons.env.formatData.discretePhenotype and not cl.epochComplete and (exploreIter - cl.lastMatch) >= cons.noMatchUpdate:
+            if cons.env.formatData.discretePhenotype and not cl.epochComplete and (
+                    exploreIter - cl.lastMatch) >= cons.noMatchUpdate:
                 cl.briefUpdateFitness(exploreIter)
 
             if cl.match(state):  # Check for match
@@ -186,7 +187,6 @@ class ClassifierSet:
                     self.correctSet.append(ref)
             else:
                 self.correctSet.append(ref)
-
 
     def makeEvalMatchSet(self, state):
         """ Constructs a match set for evaluation purposes which does not activate either covering or deletion. """
@@ -276,7 +276,8 @@ class ClassifierSet:
         # -------------------------------------------------------
         # GA RUN REQUIREMENT
         # -------------------------------------------------------
-        if (exploreIter - self.getIterStampAverage()) < cons.theta_GA:  # Does the correct set meet the requirements for activating the GA?
+        if (
+                exploreIter - self.getIterStampAverage()) < cons.theta_GA:  # Does the correct set meet the requirements for activating the GA?
             return
 
         # Updates the iteration time stamp for all rules in the correct set (which the GA operates on).
@@ -297,14 +298,14 @@ class ClassifierSet:
         # -------------------------------------------------------
         # INITIALIZE OFFSPRING
         # -------------------------------------------------------
-        cl1=tree_Clone(clP1, exploreIter)
+        cl1 = tree_Clone(clP1, exploreIter)
         clP2 = selectList[1]
         cl2 = tree_Clone(clP2, exploreIter)
 
         # -------------------------------------------------------
         # CROSSOVER OPERATOR - Uniform Crossover Implemented (i.e. all attributes have equal probability of crossing over between two parents)
         # -------------------------------------------------------
-        if operation_decider<cons.chi:
+        if operation_decider < cons.chi:
             cons.timer.startTimeCrossover()
 
             # PERFORM CROSSOVER!
@@ -386,7 +387,7 @@ class ClassifierSet:
 
     def selectClassifierT(self, exploreIter):
         """  Selects parents using tournament selection according to the fitness of the classifiers. """
-        setList = copy.deepcopy(self.correctSet) # correct set is a list of reference IDs
+        setList = copy.deepcopy(self.correctSet)  # correct set is a list of reference IDs
         if len(setList) > 2:
             selectList = [None, None]
             currentCount = 0
@@ -508,7 +509,6 @@ class ClassifierSet:
             self.microPopSize += 1
         cons.timer.stopTimeAdd()
 
-
     def insertDiscoveredClassifiers(self, cl1, cl2, clP1, clP2, exploreIter):
         """ Inserts both discovered classifiers keeping the maximal size of the population and possibly doing GA subsumption.
         Checks for default rule (i.e. rule with completely general condition) prevents such rules from being added to the population. """
@@ -571,7 +571,6 @@ class ClassifierSet:
                 self.popSet[ref].updateRelativeIndFitness(indFitSum, partOfCorrect, exploreIter)
                 self.popSet[ref].updateFitness(exploreIter)
 
-
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # OTHER METHODS
     # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -583,7 +582,7 @@ class ClassifierSet:
             ref = self.correctSet[i]
             sumCl += self.popSet[ref].timeStampGA * self.popSet[ref].numerosity
             numSum += self.popSet[ref].numerosity  # numerosity sum of correct set
-        return sumCl/float(numSum) if numSum else 0
+        return sumCl / float(numSum) if numSum else 0
 
     def setIterStamps(self, exploreIter):
         """ Sets the time stamp of all classifiers in the set to the current time. The current time
@@ -679,7 +678,7 @@ class ClassifierSet:
         for cl in self.popSet:
             self.microPopSize += cl.numerosity
 
-    def getPopTrack(self, accuracy, exploreIter, trackingFrequency):
+    def getPopTrack(self, accuracy, RMSE, exploreIter, trackingFrequency):
         """ Returns a formated output string to be printed to the Learn Track output file. """
 
         # GP integration code!!!
@@ -693,7 +692,7 @@ class ClassifierSet:
                 numRules += 1
 
         trackString = str(int(exploreIter / trackingFrequency)) + "\t" + str(exploreIter) + "\t" + str(
-            len(self.popSet)) + "\t" + str(self.microPopSize) + "\t" + str(accuracy) + "\t" + str(
+            len(self.popSet)) + "\t" + str(self.microPopSize) + "\t" + str(RMSE) + "\t" + str(accuracy) + "\t" + str(
             numRules) + "\t" + str(numTrees) + "\t" + str(self.aveGenerality) + "\t" + str(self.expRules) + "\t" + str(
             cons.timer.returnGlobalTimer()) + "\n"
         # -------------------------------------------------------
@@ -712,7 +711,7 @@ class ClassifierSet:
         else:
             print(("Epoch: " + str(int(exploreIter / trackingFrequency)) + "\t Iteration: " + str(
                 exploreIter) + "\t MacroPop: " + str(len(self.popSet)) + "\t MicroPop: " + str(
-                self.microPopSize) + "\t AccEstimate: " + str(accuracy) + "\t RuleCount: " + str(
+                self.microPopSize) + "\t RMSE: " + str(RMSE) + "\t AccEstimate: " + str(accuracy) + "\t RuleCount: " + str(
                 numRules) + "\t TreeCount: " + str(numTrees) + "\t AveGen: " + str(
                 self.aveGenerality) + "\t ExpRules: " + str(self.expRules) + "\t PhenRange: " + str(
                 self.avePhenotypeRange) + "\t Time: " + str(cons.timer.returnGlobalTimer())))

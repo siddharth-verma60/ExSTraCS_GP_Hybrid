@@ -2,3 +2,8 @@ __pycache__/
 *.py[cod]
 untitled/
 .idea/
+venv/
+Local_Output/*
+Datasets/
+*.pyc
+.DS_Store
