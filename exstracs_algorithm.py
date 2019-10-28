@@ -46,6 +46,7 @@ import math
 
 class ExSTraCS:
     def __init__(self):
+        random.seed(cons.randomSeed)
         """ Initializes the ExSTraCS algorithm """
         print("ExSTraCS: Initializing Algorithm...")
         # Global Parameters-------------------------------------------------------------------------------------

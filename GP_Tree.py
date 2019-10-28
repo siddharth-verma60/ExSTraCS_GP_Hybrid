@@ -35,6 +35,8 @@ from operator import attrgetter
 from exstracs_constants import *
 from exstracs_pareto import *
 
+import sys
+sys.setrecursionlimit(1500)
 
 class GP_Tree:
     """Genetic-Programming Syntax Tree created for performing the common GP operations on trees. This tree is traversed
@@ -46,6 +48,7 @@ Parameters and functions used to describe the tree are described as follows:"""
     class _Node:
 
         def __init__(self, data):
+            random.seed(cons.randomSeed)
             """
             :rtype: _Node object
             """

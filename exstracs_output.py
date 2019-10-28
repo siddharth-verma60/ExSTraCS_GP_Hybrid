@@ -40,6 +40,7 @@ import copy
 class OutputFileManager:
 
     def writePopStats(self, outFile, trainEval, testEval, exploreIter, pop, correct):
+        random.seed(cons.randomSeed)
         """ Makes output text file which includes all of the parameter settings used in the run as well as all of the evaluation stats including Time Track Output. """
         if cons.outputSummary:
             try:
