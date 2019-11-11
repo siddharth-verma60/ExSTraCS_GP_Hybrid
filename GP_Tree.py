@@ -48,7 +48,6 @@ Parameters and functions used to describe the tree are described as follows:"""
     class _Node:
 
         def __init__(self, data):
-            random.seed(cons.randomSeed)
             """
             :rtype: _Node object
             """

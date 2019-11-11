@@ -39,7 +39,6 @@ import sys
 
 class ClassifierSet:
     def __init__(self, a=None):
-        random.seed(cons.randomSeed)
         """ Overloaded initialization: Handles creation of a new population or a rebooted population (i.e. a previously saved population). """
         # Major Parameters-----------------------------------
         self.popSet = []  # List of classifiers/rules

@@ -34,7 +34,6 @@ import random
 
 class AttributeTracking:
     def __init__(self, doAttTrack):
-        random.seed(cons.randomSeed)
         """ Initialize Attribute Tracking Object"""
         self.percent = 0.0
         if doAttTrack:

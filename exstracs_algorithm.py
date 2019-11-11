@@ -46,7 +46,6 @@ import math
 
 class ExSTraCS:
     def __init__(self):
-        random.seed(cons.randomSeed)
         """ Initializes the ExSTraCS algorithm """
         print("ExSTraCS: Initializing Algorithm...")
         # Global Parameters-------------------------------------------------------------------------------------
@@ -564,7 +563,7 @@ class ExSTraCS:
             print("Balanced Accuracy (Adjusted) = " + str(balancedAcc))
             print("Balanced Accuracy for best prediction = " + str(bestBalancedAcc))
             # Balanced and Standard Accuracies will only be the same when there are equal instances representative of each phenotype AND there is 100% covering. (NOTE even at 100% covering, the values may differ due to subtle float calculation differences in the computer)
-            resultList = [balancedAcc, instanceCoverage, bestBalancedAcc]
+            resultList = [balancedAcc, instanceCoverage, bestBalancedAcc, 0, 0]
             return resultList
 
     # ContinuousCode #########################

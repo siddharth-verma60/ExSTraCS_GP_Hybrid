@@ -37,7 +37,6 @@ import ast
 class Classifier:
     def __init__(self,a=None,b=None,c=None,d=None):
 
-        random.seed(cons.randomSeed)
         self.errorSum = 0
         self.errorCount = 0
         self.totalFreq = 1
