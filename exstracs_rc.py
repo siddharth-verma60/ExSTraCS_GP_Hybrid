@@ -32,7 +32,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 from exstracs_constants import *
 from exstracs_classaccuracy import ClassAccuracy
 from exstracs_prediction import *
-from exstracs_classifierset_GP import ClassifierSet
+from exstracs_classifierset_tree_plus_rule import ClassifierSet
 import copy
 import math
 #------------------------------------------------------

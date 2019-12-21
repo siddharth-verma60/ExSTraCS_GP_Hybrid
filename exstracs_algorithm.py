@@ -28,7 +28,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 # Import Required Modules-------------------------------
 from exstracs_constants import *
-from exstracs_classifierset_GP import ClassifierSet
+from exstracs_classifierset_tree_plus_rule import ClassifierSet
 from exstracs_prediction import *
 from exstracs_best_prediction import *
 from exstracs_at import *

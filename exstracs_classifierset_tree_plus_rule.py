@@ -1,9 +1,9 @@
 """
 Name:        ExSTraCS_ClassifierSet_GP.py
-Authors:     Ryan Urbanowicz - Written at Dartmouth College, Hanover, NH, USA
+Authors:     Siddharth Verma
 Contact:     ryan.j.urbanowicz@darmouth.edu
 Created:     April 25, 2014
-Description: (Only for standalone GP in ExSTraCS)This module handles all classifier sets (population, match set, correct set) along with mechanisms and heuristics that act on these sets.
+Description: (Supports GP trees and rules in ExSTraCS) This module handles all classifier sets (population, match set, correct set) along with mechanisms and heuristics that act on these sets.
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 ExSTraCS V1.0: Extended Supervised Tracking and Classifying System - An advanced LCS designed specifically for complex, noisy classification/data mining tasks,
@@ -24,21 +24,15 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 # Import Required Modules-------------------------------
-from exstracs_constants import *
 from exstracs_classifier import Classifier
-# from exstracs_tree import *
-from GP_Tree import *
-
-print()
+from exstracs_tree import *
 import random
 import copy
 import sys
-
-
 # ------------------------------------------------------
 
 class ClassifierSet:
-    def __init__(self, a=None):
+    def __init__(self, loadSavedPopulation=None):
         """ Overloaded initialization: Handles creation of a new population or a rebooted population (i.e. a previously saved population). """
         # Major Parameters-----------------------------------
         self.popSet = []  # List of classifiers/rules
@@ -46,10 +40,6 @@ class ClassifierSet:
         self.correctSet = []  # List of references to rules in population that both match and specify correct phenotype
         self.microPopSize = int(
             cons.popInitGP * cons.N)  # Tracks the current micro population size, i.e. the population size which takes rule numerosity into account.
-
-        #         #Epoch Pool Deletion---------------------------------
-        #         self.ECPopSize = 0      #Epoch Complete - Micro Pop Size
-        #         self.ENCPopSize = 0     #Epoch Not Complete - Micro Pop Size
 
         # Evaluation Parameters-------------------------------
         self.aveGenerality = 0.0
@@ -62,10 +52,10 @@ class ClassifierSet:
         self.tree_error = None  # changing error threshold for trees to be considered in the correct set
 
         # Set Constructors-------------------------------------
-        if a == None:
+        if loadSavedPopulation == None:
             self.makePop()  # Initialize a new population
-        elif isinstance(a, str):
-            self.rebootPop(a)  # Initialize a population based on an existing saved rule population
+        elif isinstance(loadSavedPopulation, str):
+            self.rebootPop(loadSavedPopulation)  # Initialize a population based on an existing saved rule population
         else:
             print("ClassifierSet: Error building population.")
 
@@ -147,13 +137,12 @@ class ClassifierSet:
                     totalError += error
                     tree_count += 1
             newError = totalError / tree_count
+
             if self.tree_error != None:
                 # change learning rate to be in constants
                 self.tree_error = self.tree_error + (0.2 * (newError - self.tree_error))
             else:
                 self.tree_error = newError
-
-            # print("New Error: " + str(newError) + " Tree Error: " + str(self.tree_error) + "Total Error: " + str(totalError))
 
             for cl in self.popSet:
                 if cl.isTree:
@@ -276,13 +265,12 @@ class ClassifierSet:
         # -------------------------------------------------------
         # GA RUN REQUIREMENT
         # -------------------------------------------------------
-        if (
-                exploreIter - self.getIterStampAverage()) < cons.theta_GA:  # Does the correct set meet the requirements for activating the GA?
+        if (exploreIter - self.getIterStampAverage()) < cons.theta_GA:
+            # Does the correct set meet the requirements for activating the GA?
             return
 
         # Updates the iteration time stamp for all rules in the correct set (which the GA operates on).
         self.setIterStamps(exploreIter)
-        changed = False
 
         # -------------------------------------------------------
         # SELECT PARENTS - Niche GA - selects parents from the correct class
@@ -424,90 +412,10 @@ class ClassifierSet:
 
         return selectList
 
-    # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # SUBSUMPTION METHODS
-    # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def subsumeClassifier(self, exploreIter, cl=None, cl1P=None, cl2P=None):
         """ Tries to subsume a classifier in the parents. If no subsumption is possible it tries to subsume it in the current set. """
         if cl.isTree:
-            self.addGAClassifierToPopulation(cl, exploreIter)
-
-        if cl1P != None and cl1P.subsumes(cl):
-            self.microPopSize += 1
-            #             if cl1P.epochComplete:
-            #                 self.ECPopSize += 1
-            #             else:
-            #                 self.ENCPopSize += 1
-            cl1P.updateNumerosity(1)
-        elif cl2P != None and cl2P.subsumes(cl):
-            self.microPopSize += 1
-            #             if cl2P.epochComplete:
-            #                 self.ECPopSize += 1
-            #             else:
-            #                 self.ENCPopSize += 1
-            cl2P.updateNumerosity(1)
-        else:
-            self.subsumeClassifier2(cl, exploreIter);  # Try to subsume in the correct set.
-
-    def subsumeClassifier2(self, cl, exploreIter):
-        """ Tries to subsume a classifier in the correct set. If no subsumption is possible the classifier is simply added to the population considering
-        the possibility that there exists an identical classifier. """
-        choices = []
-        for ref in self.correctSet:
-            if self.popSet[ref].subsumes(cl):
-                choices.append(ref)
-
-        if len(choices) > 0:  # Randomly pick one classifier to be subsumer
-            choice = int(random.random() * len(choices))
-            self.popSet[choices[choice]].updateNumerosity(1)
-            self.microPopSize += 1
-            #             if self.popSet[choices[choice]].epochComplete:
-            #                 self.ECPopSize += 1
-            #             else:
-            #                 self.ENCPopSize += 1
-            cons.timer.stopTimeSubsumption()
-            return
-
-        cons.timer.stopTimeSubsumption()
-        self.addGAClassifierToPopulation(cl,
-                                         exploreIter)  # If no subsumer was found, check for identical classifier, if not then add the classifier to the population
-
-    def doCorrectSetSubsumption(self):
-        """ Executes correct set subsumption.  The correct set subsumption looks for the most general subsumer classifier in the correct set
-        and subsumes all classifiers that are more specific than the selected one. """
-        subsumer = None
-        for ref in self.correctSet:
-            cl = self.popSet[ref]
-            if cl.isSubsumer():
-                if subsumer == None or cl.isMoreGeneral(subsumer):
-                    subsumer = cl
-
-        if subsumer != None:  # If a subsumer was found, subsume all more specific classifiers in the correct set
-            i = 0
-            while i < len(self.correctSet):
-                ref = self.correctSet[i]
-                if subsumer.isMoreGeneral(self.popSet[ref]):
-                    subsumer.updateNumerosity(self.popSet[ref].numerosity)
-
-                    self.removeMacroClassifier(ref)
-                    self.deleteFromMatchSet(ref)
-                    self.deleteFromCorrectSet(ref)
-                    i = i - 1
-                i = i + 1
-
-    def addGAClassifierToPopulation(self, cl, exploreIter):
-
-        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
-        cons.timer.startTimeAdd()
-        oldCl = self.getIdenticalClassifier(cl)
-
-        if oldCl != None:  # found identical classifier
-            oldCl.updateNumerosity(1)
-            self.microPopSize += 1
-        else:
-            self.popSet.append(cl)
-            self.microPopSize += 1
-        cons.timer.stopTimeAdd()
+            pass
 
     def insertDiscoveredClassifiers(self, cl1, cl2, clP1, clP2, exploreIter):
         """ Inserts both discovered classifiers keeping the maximal size of the population and possibly doing GA subsumption.
@@ -711,7 +619,8 @@ class ClassifierSet:
         else:
             print(("Epoch: " + str(int(exploreIter / trackingFrequency)) + "\t Iteration: " + str(
                 exploreIter) + "\t MacroPop: " + str(len(self.popSet)) + "\t MicroPop: " + str(
-                self.microPopSize) + "\t RMSE: " + str(RMSE) + "\t AccEstimate: " + str(accuracy) + "\t RuleCount: " + str(
+                self.microPopSize) + "\t RMSE: " + str(RMSE) + "\t AccEstimate: " + str(
+                accuracy) + "\t RuleCount: " + str(
                 numRules) + "\t TreeCount: " + str(numTrees) + "\t AveGen: " + str(
                 self.aveGenerality) + "\t ExpRules: " + str(self.expRules) + "\t PhenRange: " + str(
                 self.avePhenotypeRange) + "\t Time: " + str(cons.timer.returnGlobalTimer())))
