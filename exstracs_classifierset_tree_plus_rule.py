@@ -417,6 +417,20 @@ class ClassifierSet:
         if cl.isTree:
             pass
 
+    def addGAClassifierToPopulation(self, cl, exploreIter):
+
+        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
+        cons.timer.startTimeAdd()
+        oldCl = self.getIdenticalClassifier(cl)
+
+        if oldCl != None:  # found identical classifier
+            oldCl.updateNumerosity(1)
+            self.microPopSize += 1
+        else:
+            self.popSet.append(cl)
+            self.microPopSize += 1
+        cons.timer.stopTimeAdd()
+
     def insertDiscoveredClassifiers(self, cl1, cl2, clP1, clP2, exploreIter):
         """ Inserts both discovered classifiers keeping the maximal size of the population and possibly doing GA subsumption.
         Checks for default rule (i.e. rule with completely general condition) prevents such rules from being added to the population. """
