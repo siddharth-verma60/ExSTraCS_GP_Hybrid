@@ -156,7 +156,6 @@ class ClassifierSet:
                     if error > (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0]):
                         error = (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0])
                     totalError += error
-                    #print abs(float(phenotype) - float(cl.phenotype))
                     tree_count += 1
             newError = totalError / tree_count
             if self.tree_error != None:

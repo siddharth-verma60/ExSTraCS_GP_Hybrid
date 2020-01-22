@@ -36,8 +36,13 @@ class BestPrediction:
                 best_cl = cl
                 best_fitness = cl.fitness
 
-        self.decision = best_cl.phenotype
+        if not cl.isTree:
+            centroid = (best_cl.phenotype[0] + best_cl.phenotype[1])/2
+            self.decision = centroid
+        else:
+            self.decision = best_cl.phenotype
 
     def getDecision(self):
         """ Returns prediction decision. """
         return self.decision
+

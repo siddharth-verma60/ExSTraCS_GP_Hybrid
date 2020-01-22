@@ -9,8 +9,8 @@
 ######Dataset Parameters
 
 ######---------------------------------------------------------------------------------------------------------------------------------
-trainFile=Datasets/13-Regression(CosX)_Train#Regression(X*Sin(X))_Train#Test_Data_Linear#xor_2_Train_01#Regression(X:3+5)_Train#Regression(X*Sin(X))_Train#	 Training file is required (Can optionally include .txt extension in filename.)
-testFile=Datasets/13-Regression(CosX)_Test#Regression(X*Sin(X))_Test#Test_Data_Linear#xor_2_Test_01#	Testing file is optional. If no testing data available or desired, put 'None' (no quotes).  Default is 'None' (Can optionally include .txt extension in filename.)
+trainFile=Datasets/Regression(2X)_Train#Regression(X*Sin(X))_Train#Test_Data_Linear#xor_2_Train_01#Regression(X:3+5)_Train#Regression(X*Sin(X))_Train#	 Training file is required (Can optionally include .txt extension in filename.)
+testFile=Datasets/Regression(2X)_Test#Regression(X*Sin(X))_Test#Test_Data_Linear#xor_2_Test_01#	Testing file is optional. If no testing data available or desired, put 'None' (no quotes).  Default is 'None' (Can optionally include .txt extension in filename.)
 outFileName=Local_Output/#									Optional output filepath and filename prefix.
 offlineData=1#								 				Is ExSTraCS loading a finite dataset(1= TRUE), or is it being fed data online from an 'infinite' source (e.g. some other environment such as a multiplexer problem feed (0=False)
 internalCrossValidation=0#									1 is True, 0 is False; Generate CV dataset files and run ExSTraCS on them serially. (NOT FULLY TESTED)
@@ -23,7 +23,7 @@ labelMissingData=NA#										Indicates how missing data is labeled in the data 
 ######General Run Parameters
 ######---------------------------------------------------------------------------------------------------------------------------------
 trackingFrequency=100#	If 0, then learning tracking will run every epoch (i.e. every pass through all instances in the training data). Otherwise it will occur after the specified number of learning iterations.
-learningIterations=10000.25000.30000.50000#10000.30000.40000.50000.60000.70000.80000.90000.100000#.200000#					Specify every iteration at which a full algorithm evaluation will be conducted and output files saved.  The last/largest value indicates the stopping point. Separate values with a period (.).
+learningIterations=1000.5000.10000.25000.30000.50000.75000.100000#10000.30000.40000.50000.60000.70000.80000.90000.100000#.200000#					Specify every iteration at which a full algorithm evaluation will be conducted and output files saved.  The last/largest value indicates the stopping point. Separate values with a period (.).
 outputSummary=1#											1 is True, 0 is False
 outputPopulation=1#											1 is True, 0 is False
 outputAttCoOccur=1#											1 is True, 0 is False
@@ -54,7 +54,7 @@ selectionMethod=tournament#		Genetic Algorithm selection mechanism; You may spec
 ######Genetic Programming Integration
 ######---------------------------------------------------------------------------------------------------------------------------------
 useGP=1# 						1 is True, 0 is False
-popInitGP=1.0#					Proportion of population initially seeded with GP trees.
+popInitGP=0.5#					Proportion of population initially seeded with GP trees.
 ######---------------------------------------------------------------------------------------------------------------------------------
 ######Attribute Tracking and Feedback (ExSTraCS long-term memory, implemented to characterize heterogeneous patterns, and refine learning.) Tracking must be on, for feedback to be used.
 ######---------------------------------------------------------------------------------------------------------------------------------

@@ -186,10 +186,7 @@ class Classifier:
         self.specifiedAttList = copy.deepcopy(clOld.specifiedAttList)
         self.condition = copy.deepcopy(clOld.condition)
         self.phenotype = copy.deepcopy(clOld.phenotype)
-        if cons.env.formatData.discretePhenotype:
-            self.phenotype_RP = copy.deepcopy(clOld.phenotype_RP)
-        else:
-            self.phenotype_RP = None #This will change if phenotype range changes when GA operates.
+        self.phenotype_RP = copy.deepcopy(clOld.phenotype_RP)
         self.timeStampGA = exploreIter  #consider starting at 0 instead???
         self.initTimeStamp = exploreIter
         self.lastMatch = exploreIter
@@ -1090,7 +1087,7 @@ class Classifier:
             self.errorCount += 1
 
     #NEW
-    def updateAccuracy(self,exploreIter):
+    def updateAccuracy(self,exploreIter,trueEndpoint):
         """ Update the accuracy tracker """
         nonUsefulDiscount = 0.001
         coverOpportunity = 1000

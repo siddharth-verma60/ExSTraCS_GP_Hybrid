@@ -134,9 +134,12 @@ class ClassifierSet:
             for cl in self.popSet:
                 if cl.isTree:
                     error = abs(float(phenotype) - float(cl.phenotype))
+                    dataInfo = cons.env.formatData
+                    if error > (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0]):
+                        error = (dataInfo.phenotypeList[1] - dataInfo.phenotypeList[0])
                     totalError += error
                     tree_count += 1
-            newError = totalError / tree_count
+            newError = totalError / tree_count if tree_count!=0 else 0
 
             if self.tree_error != None:
                 # change learning rate to be in constants
@@ -147,6 +150,8 @@ class ClassifierSet:
             for cl in self.popSet:
                 if cl.isTree:
                     cl.calcPhenProb(self.tree_error)
+
+        doCovering = True
         setNumerositySum = 0
 
         # -------------------------------------------------------
@@ -164,18 +169,46 @@ class ClassifierSet:
             if cl.match(state):  # Check for match
                 self.matchSet.append(i)  # If match - add classifier to match set
                 setNumerositySum += cl.numerosity  # Increment the set numerosity sum
+
+                # Covering Check--------------------------------------------------------
+                if cons.env.formatData.discretePhenotype:  # Discrete phenotype
+                    if cl.phenotype == phenotype and not cl.isTree:  # Check for phenotype coverage
+                        doCovering = False
+                else:  # ContinuousCode #########################
+                    if not cl.isTree and float(cl.phenotype[0]) <= float(phenotype) <= float(
+                            cl.phenotype[1]):  # Check for phenotype coverage
+                        doCovering = False
+
         cons.timer.stopTimeMatching()
+
+        if doCovering:
+            cons.timer.startTimeCovering()
+            newCl = Classifier(setNumerositySum+1,exploreIter, state, phenotype)
+            self.addCoveredClassifierToPopulation(newCl)
+            self.matchSet.append(len(self.popSet)-1)  # Add covered classifier to matchset
+            cons.timer.stopTimeCovering()
 
     def makeCorrectSet(self, phenotype):
         """ Constructs a correct set out of the given match set. """
         for i in range(len(self.matchSet)):
             ref = self.matchSet[i]
-
+            #-------------------------------------------------------
+            # DISCRETE PHENOTYPE
+            #-------------------------------------------------------
             if cons.env.formatData.discretePhenotype:
                 if self.popSet[ref].phenotype == phenotype:
                     self.correctSet.append(ref)
-            else:
-                self.correctSet.append(ref)
+            #-------------------------------------------------------
+            # CONTINUOUS PHENOTYPE
+            #-------------------------------------------------------
+            else: #ContinuousCode #########################
+                if not self.popSet[ref].isTree:
+                    if float(phenotype) <= float(self.popSet[ref].phenotype[1]) and float(phenotype) >= float(self.popSet[ref].phenotype[0]):
+                        self.correctSet.append(ref)
+                else: #TREES
+                    #We won't use any notion of a correct set for GP trees.  Use error to determine correct set for att tracking downstream, but not used for accuracy update.
+                    if abs(float(phenotype) - float(self.popSet[ref].phenotype)) <= self.tree_error:
+                        self.correctSet.append(ref)
 
     def makeEvalMatchSet(self, state):
         """ Constructs a match set for evaluation purposes which does not activate either covering or deletion. """
@@ -278,6 +311,7 @@ class ClassifierSet:
         cons.timer.startTimeSelection()
         selectList = self.selectClassifierT(exploreIter)
         clP1 = selectList[0]
+        clP2 = selectList[1]
         cons.timer.stopTimeSelection()
 
         # Random value to decide fate of the parent
@@ -286,16 +320,28 @@ class ClassifierSet:
         # -------------------------------------------------------
         # INITIALIZE OFFSPRING
         # -------------------------------------------------------
-        cl1 = tree_Clone(clP1, exploreIter)
-        clP2 = selectList[1]
-        cl2 = tree_Clone(clP2, exploreIter)
+        if clP1.isTree:
+            cl1 = tree_Clone(clP1, exploreIter)
+        else:
+            cl1 = Classifier(clP1, exploreIter)
 
-        # -------------------------------------------------------
+        if clP2 == None:
+            if clP1.isTree:
+                cl2 = tree_Clone(clP1, exploreIter)
+            else:
+                cl2 = Classifier(clP1, exploreIter)
+        else:
+            if clP2.isTree:
+                cl2 = tree_Clone(clP2, exploreIter)
+            else:
+                cl2 = Classifier(clP2, exploreIter)
+
+        changed=False
+        # --------------------------------------------------------
         # CROSSOVER OPERATOR - Uniform Crossover Implemented (i.e. all attributes have equal probability of crossing over between two parents)
-        # -------------------------------------------------------
-        if operation_decider < cons.chi:
+        # --------------------------------------------------------
+        if operation_decider < cons.chi and not cl1.equals(cl2):
             cons.timer.startTimeCrossover()
-
             # PERFORM CROSSOVER!
             changed = cl1.uniformCrossover(cl2, state, phenotype)
             cons.timer.stopTimeCrossover()
@@ -304,18 +350,26 @@ class ClassifierSet:
             # INITIALIZE KEY OFFSPRING PARAMETERS
             # -------------------------------------------------------
             if changed:
-                cl1.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
-                cl2.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
+                if cl1.isTree:
+                    cl1.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
+                    # Get phenotype for current instance
+                    cl1.setPhenotype(state)
+                    # Update correct count accordingly.
+                    cl1.updateClonePhenotype(phenotype)
+                else:
+                    cl1.setAccuracy((cl1.accuracy + cl2.accuracy) / 2.0)
+                    cl1.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
 
-                # Get phenotype for current instance
-                cl1.setPhenotype(state)
-                # Update correct count accordingly.
-                cl1.updateClonePhenotype(phenotype)
+                if cl2.isTree:
+                    cl2.setFitness(cons.fitnessReduction * (cl1.fitness + cl2.fitness) / 2.0)
+                    # Get phenotype for current instance
+                    cl2.setPhenotype(state)
+                    # Update correct count accordingly.
+                    cl2.updateClonePhenotype(phenotype)
+                else:
+                    cl2.setAccuracy(cl1.accuracy)
+                    cl2.setFitness(cl1.fitness)
 
-                # Get phenotype for current instance
-                cl2.setPhenotype(state)
-                # Update correct count accordingly.
-                cl2.updateClonePhenotype(phenotype)
 
             else:
                 cl1.setFitness(cons.fitnessReduction * cl1.fitness)
@@ -329,10 +383,12 @@ class ClassifierSet:
             changed = cl1.Mutation(state, phenotype)
             cons.timer.stopTimeMutation()
 
-            # Get phenotype for current instance
-            cl1.setPhenotype(state)
-            # Update correct count accordingly.
-            cl1.updateClonePhenotype(phenotype)
+            if cl1.isTree:
+                # Get phenotype for current instance
+                cl1.setPhenotype(state)
+                # Update correct count accordingly.
+                cl1.updateClonePhenotype(phenotype)
+
             cl1.setFitness(cons.fitnessReduction * cl1.fitness)
 
         # -------------------------------------------------------
@@ -412,10 +468,63 @@ class ClassifierSet:
 
         return selectList
 
+    # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # SUBSUMPTION METHODS
+    # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def subsumeClassifier(self, exploreIter, cl=None, cl1P=None, cl2P=None):
         """ Tries to subsume a classifier in the parents. If no subsumption is possible it tries to subsume it in the current set. """
         if cl.isTree:
-            pass
+            self.addGAClassifierToPopulation(cl, exploreIter)
+
+        if cl1P != None and cl1P.subsumes(cl):
+            self.microPopSize += 1
+            cl1P.updateNumerosity(1)
+        elif cl2P != None and cl2P.subsumes(cl):
+            self.microPopSize += 1
+            cl2P.updateNumerosity(1)
+        else:
+            self.subsumeClassifier2(cl, exploreIter);  # Try to subsume in the correct set.
+
+    def subsumeClassifier2(self, cl, exploreIter):
+        """ Tries to subsume a classifier in the correct set. If no subsumption is possible the classifier is simply added to the population considering
+        the possibility that there exists an identical classifier. """
+        choices = []
+        for ref in self.correctSet:
+            if self.popSet[ref].subsumes(cl):
+                choices.append(ref)
+
+        if len(choices) > 0:  # Randomly pick one classifier to be subsumer
+            choice = int(random.random() * len(choices))
+            self.popSet[choices[choice]].updateNumerosity(1)
+            self.microPopSize += 1
+            cons.timer.stopTimeSubsumption()
+            return
+
+        cons.timer.stopTimeSubsumption()
+        self.addGAClassifierToPopulation(cl,
+                                         exploreIter)  # If no subsumer was found, check for identical classifier, if not then add the classifier to the population
+
+    def doCorrectSetSubsumption(self):
+        """ Executes correct set subsumption.  The correct set subsumption looks for the most general subsumer classifier in the correct set
+        and subsumes all classifiers that are more specific than the selected one. """
+        subsumer = None
+        for ref in self.correctSet:
+            cl = self.popSet[ref]
+            if cl.isSubsumer():
+                if subsumer == None or cl.isMoreGeneral(subsumer):
+                    subsumer = cl
+
+        if subsumer != None:  # If a subsumer was found, subsume all more specific classifiers in the correct set
+            i = 0
+            while i < len(self.correctSet):
+                ref = self.correctSet[i]
+                if subsumer.isMoreGeneral(self.popSet[ref]):
+                    subsumer.updateNumerosity(self.popSet[ref].numerosity)
+                    self.removeMacroClassifier(ref)
+                    self.deleteFromMatchSet(ref)
+                    self.deleteFromCorrectSet(ref)
+                    i = i - 1
+                i = i + 1
 
     def addGAClassifierToPopulation(self, cl, exploreIter):
 
@@ -430,6 +539,25 @@ class ClassifierSet:
             self.popSet.append(cl)
             self.microPopSize += 1
         cons.timer.stopTimeAdd()
+
+    def addCoveredClassifierToPopulation(self, cl):
+        """ Adds a classifier to the set and increases the numerositySum value accordingly."""
+        cons.timer.startTimeAdd()
+        self.popSet.append(cl)
+        cons.timer.stopTimeAdd()
+
+    def addClassifierForInit(self, state, phenotype):
+        #temporarily turn off expert knowledge
+
+        cl = Classifier(1, 0, state, phenotype)
+        oldCl = self.getIdenticalClassifier(cl)
+        if oldCl != None: #Copy found
+            oldCl.numerosity += 1
+        else: #Brand new rule
+            #cl.updateExperience()
+            self.popSet.append(cl)
+
+        self.microPopSize += 1 #global (numerosity inclusive) popsize
 
     def insertDiscoveredClassifiers(self, cl1, cl2, clP1, clP2, exploreIter):
         """ Inserts both discovered classifiers keeping the maximal size of the population and possibly doing GA subsumption.
@@ -466,10 +594,15 @@ class ClassifierSet:
             self.popSet[ref].updateMatchSetSize(matchSetNumerosity)  # Moved to match set to be like GHCS
             if ref in self.correctSet:
                 self.popSet[ref].updateCorrect()
+                if not cons.env.formatData.discretePhenotype: #Continuous endpoint
+                    self.popSet[ref].updateError(trueEndpoint)
+            else: #Continuous endpoint gets Error added for not being in the correct set.
+                if not cons.env.formatData.discretePhenotype: #Continuous endpoint
+                    self.popSet[ref].updateIncorrectError()
 
             self.popSet[ref].updateAccuracy(exploreIter, trueEndpoint)
 
-            if cons.env.formatData.discretePhenotype:
+            if cons.env.formatData.discretePhenotype or not self.popSet[ref].isTree:
                 self.popSet[ref].updateCorrectCoverage()
                 self.popSet[ref].updateIndFitness(exploreIter)
 
@@ -484,7 +617,7 @@ class ClassifierSet:
             else:
                 self.popSet[ref].updateFitness(exploreIter)
 
-        if cons.env.formatData.discretePhenotype:
+        if cons.env.formatData.discretePhenotype or not self.popSet[ref].isTree:
             for ref in self.matchSet:
                 if ref in self.correctSet:
                     partOfCorrect = True

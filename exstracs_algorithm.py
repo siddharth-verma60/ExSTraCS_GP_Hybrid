@@ -352,7 +352,7 @@ class ExSTraCS:
                 # -------------------------------------------------------
                 # CONTINUOUS PHENOTYPE PREDICTION
                 # -------------------------------------------------------
-                predictionError = (phenotypePrediction - float(state_phenotype[1]))
+                predictionError = abs(phenotypePrediction - float(state_phenotype[1]))
                 phenotypeRange = cons.env.formatData.phenotypeList[1] - cons.env.formatData.phenotypeList[0]
                 accuracyEstimate = 1.0 - (predictionError / float(phenotypeRange))
                 # self.correct[self.exploreIter % cons.trackingFrequency] = accuracyEstimate

@@ -168,6 +168,8 @@ Parameters and functions used to describe the tree are described as follows:"""
         self.relativeIndFitness = None
         self.fitness = 1
 
+        self.sumOfSquares = 0.0
+
         ##### Experience management #####
         self.epochComplete = False  # Has this rule existed for a complete epoch (i.e. a cycle through training set).
         self.lastMatch = 0
@@ -569,6 +571,26 @@ Parameters and functions used to describe the tree are described as follows:"""
         else:
             self.matchCover += 1
 
+    def updateError(self, trueEndpoint):
+        if not self.epochComplete:
+            # Error caclulations are limited to extremes of observed training data phenotypes in calculating the range centroid.
+            if self.phenotype > cons.env.formatData.phenotypeList[1]:
+                adjustedError = 1
+            elif self.phenotype < cons.env.formatData.phenotypeList[0]:
+                adjustedError = 1
+            else:
+                error = abs(self.phenotype - trueEndpoint)
+                adjustedError = error / (cons.env.formatData.phenotypeList[1] - cons.env.formatData.phenotypeList[0])
+
+            self.errorSum += adjustedError  # Error is fraction of total phenotype range (i.e. maximum possible error)
+
+            self.errorCount += 1
+
+    def updateIncorrectError(self):
+        if not self.epochComplete:
+            self.errorSum += 1.0
+            self.errorCount += 1
+
     def updateCorrect(self):
         """ Increases the correct phenotype tracking by one. Once an epoch has completed, rule accuracy can't change."""
         self.correctCount += 1
@@ -615,8 +637,9 @@ Parameters and functions used to describe the tree are described as follows:"""
                 self.accuracyComponent = math.pow(self.accuracyComponent, 1)
 
             else:  # Continuous Phenotype
-                self.accuracy += (trueEndpoint - self.phenotype) ** 2
-                self.accuracyComponent = 1 / (1 + np.sqrt(self.accuracy / (exploreIter + 1)))  # Reciprocal of RMS error
+                self.sumOfSquares+= (trueEndpoint - self.phenotype) ** 2
+                self.accuracy = 1 / (1 + np.sqrt(self.sumOfSquares / (exploreIter + 1)))  # Reciprocal of RMS error
+                self.accuracyComponent = self.accuracy
 
     def updateCorrectCoverage(self):
         self.coverDiff = (self.correctCover - self.phenotype_RP * self.matchCover)
@@ -1087,8 +1110,8 @@ def uniformCrossover(first_parent, second_parent, state):
             print("Original Rule Cond: " + str(origForm2.condition))
             raise NameError("Crossover Returning empty tree.")
 
-    if str(origForm1) == str(first_parent) and (
-            isinstance(second_parent, GP_Tree) and str(origForm2) == str(second_parent)):
+    if str(origForm1) == str(first_parent) and \
+            (isinstance(second_parent, GP_Tree) and str(origForm2) == str(second_parent)):
         print('No change after crossover')
         return False
     else:
