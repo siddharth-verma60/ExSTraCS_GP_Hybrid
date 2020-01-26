@@ -29,7 +29,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 # Import Required Modules-------------------------------
 from exstracs_constants import *
 from exstracs_classifierset_tree_plus_rule import ClassifierSet
-# from exstracs_classifierset import ClassifierSet
 from exstracs_prediction import *
 from exstracs_best_prediction import *
 from exstracs_at import *
@@ -353,7 +352,7 @@ class ExSTraCS:
                 # -------------------------------------------------------
                 # CONTINUOUS PHENOTYPE PREDICTION
                 # -------------------------------------------------------
-                predictionError = abs(phenotypePrediction - float(state_phenotype[1]))
+                predictionError = (phenotypePrediction - float(state_phenotype[1]))
                 phenotypeRange = cons.env.formatData.phenotypeList[1] - cons.env.formatData.phenotypeList[0]
                 accuracyEstimate = 1.0 - (predictionError / float(phenotypeRange))
                 # self.correct[self.exploreIter % cons.trackingFrequency] = accuracyEstimate

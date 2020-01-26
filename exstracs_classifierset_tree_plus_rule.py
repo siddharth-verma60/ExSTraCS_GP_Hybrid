@@ -431,19 +431,6 @@ class ClassifierSet:
             self.microPopSize += 1
         cons.timer.stopTimeAdd()
 
-    def addClassifierForInit(self, state, phenotype):
-        #temporarily turn off expert knowledge
-
-        cl = Classifier(1, 0, state, phenotype)
-        oldCl = self.getIdenticalClassifier(cl)
-        if oldCl != None: #Copy found
-            oldCl.numerosity += 1
-        else: #Brand new rule
-            #cl.updateExperience()
-            self.popSet.append(cl)
-
-        self.microPopSize += 1 #global (numerosity inclusive) popsize
-
     def insertDiscoveredClassifiers(self, cl1, cl2, clP1, clP2, exploreIter):
         """ Inserts both discovered classifiers keeping the maximal size of the population and possibly doing GA subsumption.
         Checks for default rule (i.e. rule with completely general condition) prevents such rules from being added to the population. """
