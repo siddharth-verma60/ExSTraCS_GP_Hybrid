@@ -651,7 +651,7 @@ Parameters and functions used to describe the tree are described as follows:"""
         else:
             self.fitness = self.accuracyComponent
 
-    # For discrete phenotype
+# For discrete phenotype
     def updateIndFitness(self, exploreIter):
 
         """ Calculates the fitness of an individual rule based on it's accuracy and correct coverage relative to the 'Pareto' front """

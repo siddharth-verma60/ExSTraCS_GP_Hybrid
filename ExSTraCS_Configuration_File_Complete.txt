@@ -9,8 +9,8 @@
 ######Dataset Parameters
 
 ######---------------------------------------------------------------------------------------------------------------------------------
-trainFile=Datasets/13-Regression(CosX)_Train#Regression(X*Sin(X))_Train#Test_Data_Linear#xor_2_Train_01#Regression(X:3+5)_Train#Regression(X*Sin(X))_Train#	 Training file is required (Can optionally include .txt extension in filename.)
-testFile=Datasets/13-Regression(CosX)_Test#Regression(X*Sin(X))_Test#Test_Data_Linear#xor_2_Test_01#	Testing file is optional. If no testing data available or desired, put 'None' (no quotes).  Default is 'None' (Can optionally include .txt extension in filename.)
+trainFile=Datasets/Regression(2X+5)_Train#Regression(X*Sin(X))_Train#Test_Data_Linear#xor_2_Train_01#Regression(X:3+5)_Train#Regression(X*Sin(X))_Train#	 Training file is required (Can optionally include .txt extension in filename.)
+testFile=Datasets/Regression(2X+5)_Test#Regression(X*Sin(X))_Test#Test_Data_Linear#xor_2_Test_01#	Testing file is optional. If no testing data available or desired, put 'None' (no quotes).  Default is 'None' (Can optionally include .txt extension in filename.)
 outFileName=Local_Output/#									Optional output filepath and filename prefix.
 offlineData=1#								 				Is ExSTraCS loading a finite dataset(1= TRUE), or is it being fed data online from an 'infinite' source (e.g. some other environment such as a multiplexer problem feed (0=False)
 internalCrossValidation=0#									1 is True, 0 is False; Generate CV dataset files and run ExSTraCS on them serially. (NOT FULLY TESTED)
@@ -54,7 +54,7 @@ selectionMethod=tournament#		Genetic Algorithm selection mechanism; You may spec
 ######Genetic Programming Integration
 ######---------------------------------------------------------------------------------------------------------------------------------
 useGP=1# 						1 is True, 0 is False
-popInitGP=1.0#					Proportion of population initially seeded with GP trees.
+popInitGP=0.5#					Proportion of population initially seeded with GP trees.
 ######---------------------------------------------------------------------------------------------------------------------------------
 ######Attribute Tracking and Feedback (ExSTraCS long-term memory, implemented to characterize heterogeneous patterns, and refine learning.) Tracking must be on, for feedback to be used.
 ######---------------------------------------------------------------------------------------------------------------------------------
