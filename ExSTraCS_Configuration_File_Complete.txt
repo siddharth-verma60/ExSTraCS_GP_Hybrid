@@ -54,7 +54,7 @@ selectionMethod=tournament#		Genetic Algorithm selection mechanism; You may spec
 ######Genetic Programming Integration
 ######---------------------------------------------------------------------------------------------------------------------------------
 useGP=1# 						1 is True, 0 is False
-popInitGP=0.5#					Proportion of population initially seeded with GP trees.
+popInitGP=1.0#					Proportion of population initially seeded with GP trees.
 ######---------------------------------------------------------------------------------------------------------------------------------
 ######Attribute Tracking and Feedback (ExSTraCS long-term memory, implemented to characterize heterogeneous patterns, and refine learning.) Tracking must be on, for feedback to be used.
 ######---------------------------------------------------------------------------------------------------------------------------------
